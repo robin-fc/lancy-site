@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lancy - AI 创意工作流平台</title>
-    <meta name="description" content="Lancy 是个人 AI 创意工具集合，汇集 AI 漫剧生成、电商短视频生成、公众号内容优化等多个创意生产力工作流">
+    <title>Lancy - AI 创意工作流</title>
+    <meta name="description" content="个人 AI 创意工具集合，汇集 AI 漫剧生成、电商短视频生成、公众号内容优化">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -16,14 +16,12 @@
         }
 
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #8b5cf6;
-            --accent: #ec4899;
-            --dark: #0f172a;
-            --darker: #020617;
-            --gray: #64748b;
-            --light: #f1f5f9;
+            --bg: #fafafa;
+            --text-primary: #111111;
+            --text-secondary: #666666;
+            --border: #e5e5e5;
+            --card-hover: #f5f5f5;
+            --accent: #111111;
             --white: #ffffff;
         }
 
@@ -33,180 +31,89 @@
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: 
-                radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.8) 0%, transparent 50%),
-                radial-gradient(circle at 100% 0%, rgba(139, 92, 246, 0.8) 0%, transparent 50%),
-                radial-gradient(circle at 100% 100%, rgba(236, 72, 153, 0.8) 0%, transparent 50%),
-                radial-gradient(circle at 0% 100%, rgba(14, 165, 233, 0.8) 0%, transparent 50%),
-                linear-gradient(135deg, var(--darker) 0%, var(--dark) 100%);
+            background: var(--bg);
+            color: var(--text-primary);
             min-height: 100vh;
-            animation: gradientShift 15s ease infinite;
-            background-size: 400% 400%;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
         }
 
         /* 导航栏 */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 1000;
-            padding: 20px 0;
-        }
-
-        .nav-container {
+        header {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 40px;
+            padding: 60px 40px 40px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .nav-logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--text-primary);
             text-decoration: none;
         }
 
-        .nav-logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 800;
-            color: white;
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
-        }
-
-        .nav-logo-text {
-            font-size: 22px;
-            font-weight: 700;
-            color: white;
-            letter-spacing: -0.02em;
-        }
-
-        /* Banner 区域 */
-        .banner {
-            padding: 160px 40px 80px;
-            text-align: center;
-            max-width: 900px;
+        /* 主容器 */
+        .container {
+            max-width: 1200px;
             margin: 0 auto;
-        }
-
-        .banner h1 {
-            font-size: 72px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 24px;
-            letter-spacing: -0.04em;
-        }
-
-        .banner p {
-            font-size: 20px;
-            color: #94a3b8;
-            line-height: 1.7;
-            font-weight: 400;
+            padding: 0 40px;
         }
 
         /* 介绍区域 */
         .intro {
-            max-width: 1000px;
-            margin: 0 auto 60px;
-            padding: 0 40px;
+            margin-bottom: 80px;
         }
 
-        .intro-card {
-            background: rgba(30, 41, 59, 0.6);
-            border-radius: 20px;
-            padding: 32px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .intro-card h2 {
-            font-size: 24px;
-            font-weight: 600;
-            color: white;
-            margin-bottom: 12px;
-        }
-
-        .intro-card p {
-            font-size: 16px;
-            color: #94a3b8;
-            line-height: 1.8;
-        }
-
-        /* 项目 Gallery */
-        .projects-section {
-            max-width: 1200px;
-            margin: 0 auto 80px;
-            padding: 0 40px;
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: 36px;
+        .intro h1 {
+            font-size: 72px;
             font-weight: 700;
-            color: white;
-            margin-bottom: 40px;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.04em;
+            line-height: 1.1;
+            margin-bottom: 32px;
+            color: var(--text-primary);
         }
 
-        .projects-gallery {
+        .intro p {
+            font-size: 20px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            max-width: 600px;
+        }
+
+        /* 项目网格 */
+        .projects-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 32px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-bottom: 120px;
         }
 
         .project-card {
-            background: rgba(30, 41, 59, 0.6);
-            border-radius: 24px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 0;
             overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            position: relative;
+            transition: all 0.2s ease;
         }
 
         .project-card:hover {
-            transform: translateY(-12px);
-            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
-            border-color: rgba(99, 102, 241, 0.5);
-            background: rgba(30, 41, 59, 0.9);
+            background: var(--card-hover);
         }
 
         .project-image {
             width: 100%;
-            height: 200px;
+            height: 220px;
             overflow: hidden;
+            border-bottom: 1px solid var(--border);
         }
 
         .project-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-
-        .project-card:hover .project-image img {
-            transform: scale(1.08);
+            display: block;
         }
 
         .project-content {
@@ -216,14 +123,15 @@
         .project-title {
             font-size: 24px;
             font-weight: 600;
-            color: #f1f5f9;
+            color: var(--text-primary);
             margin-bottom: 12px;
+            letter-spacing: -0.02em;
         }
 
         .project-desc {
             font-size: 15px;
-            color: #94a3b8;
-            line-height: 1.7;
+            line-height: 1.6;
+            color: var(--text-secondary);
             margin-bottom: 24px;
         }
 
@@ -233,149 +141,118 @@
             gap: 8px;
             font-size: 15px;
             font-weight: 500;
-            color: white;
+            color: var(--accent);
             text-decoration: none;
-            padding: 12px 24px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+            transition: gap 0.2s ease;
         }
 
         .project-link:hover {
-            transform: translateX(4px);
-            box-shadow: 0 8px 28px rgba(99, 102, 241, 0.4);
+            gap: 12px;
         }
 
         .project-link svg {
             width: 16px;
             height: 16px;
-            transition: transform 0.3s ease;
-        }
-
-        .project-link:hover svg {
-            transform: translateX(4px);
         }
 
         /* Footer */
         footer {
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(15, 23, 42, 0.9);
-            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 40px 60px;
+            border-top: 1px solid var(--border);
         }
 
         .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .footer-copyright {
-            color: #64748b;
+        .copyright {
+            color: var(--text-secondary);
             font-size: 14px;
-            margin-bottom: 16px;
         }
 
         .footer-links {
             display: flex;
-            justify-content: center;
-            gap: 24px;
+            gap: 32px;
         }
 
         .footer-link {
-            color: #94a3b8;
+            color: var(--text-secondary);
             text-decoration: none;
             font-size: 14px;
-            transition: color 0.3s ease;
+            transition: color 0.2s ease;
         }
 
         .footer-link:hover {
-            color: white;
+            color: var(--text-primary);
         }
 
         /* 响应式 */
-        @media (max-width: 768px) {
-            .banner {
-                padding: 140px 20px 50px;
+        @media (max-width: 960px) {
+            .projects-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 32px;
             }
-            .banner h1 {
+            .intro h1 {
                 font-size: 48px;
             }
-            .banner p {
-                font-size: 16px;
+        }
+
+        @media (max-width: 640px) {
+            header {
+                padding: 40px 20px 30px;
             }
-            .intro {
+            .container {
                 padding: 0 20px;
             }
-            .projects-section {
-                padding: 0 20px;
+            footer {
+                padding: 30px 20px 40px;
             }
-            .projects-gallery {
+            .intro h1 {
+                font-size: 42px;
+            }
+            .intro p {
+                font-size: 18px;
+            }
+            .projects-grid {
                 grid-template-columns: 1fr;
+                gap: 24px;
             }
-            .nav-container {
-                padding: 0 20px;
-            }
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            .footer-content {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
             }
         }
-
-        .project-card {
-            animation: fadeInUp 0.6s ease-out backwards;
-        }
-
-        .project-card:nth-child(1) { animation-delay: 0.1s; }
-        .project-card:nth-child(2) { animation-delay: 0.2s; }
-        .project-card:nth-child(3) { animation-delay: 0.3s; }
     </style>
 </head>
 <body>
-    <!-- 顶部导航栏 -->
-    <nav>
-        <div class="nav-container">
-            <a href="#" class="nav-logo">
-                <div class="nav-logo-icon">L</div>
-                <span class="nav-logo-text">Lancy</span>
-            </a>
-        </div>
-    </nav>
-
-    <!-- Banner 区域 -->
-    <section class="banner">
-        <h1>AI 创意工作流</h1>
-        <p>汇聚智能化创意生产工具，让创作更高效</p>
-    </section>
+    <!-- 顶部 Logo -->
+    <header>
+        <a href="#" class="logo">Lancy</a>
+    </header>
 
     <!-- 介绍区域 -->
-    <section class="intro">
-        <div class="intro-card">
-            <h2>关于本站</h2>
-            <p>本网站是出于个人兴趣建造的 AI 工具集集合，汇集了多个实用的 AI 创意生产力工作流。从漫画短剧生成到电商短视频制作，再到公众号内容优化，一站式解决创意生产中的各类需求。后续将持续扩展更多 AI 工具入口。</p>
-        </div>
-    </section>
+    <main class="container">
+        <section class="intro">
+            <h1>AI 创意<br>工作流集合</h1>
+            <p>本网站是出于个人兴趣建造的工具集集合，汇集多个实用 AI 创意生产力工作流。后续持续扩展更多工具入口。</p>
+        </section>
 
-    <!-- 项目 Gallery -->
-    <section class="projects-section">
-        <h2 class="section-title">工作流入口</h2>
-        <div class="projects-gallery">
+        <!-- 项目网格 -->
+        <section class="projects-grid">
             <div class="project-card">
                 <div class="project-image">
                     <img src="images/generated_image_1773826831_0.jpg" alt="AI 漫剧工作流">
                 </div>
                 <div class="project-content">
                     <h3 class="project-title">AI 漫剧</h3>
-                    <p class="project-desc">基于 AI 的漫画短剧自动生成工作流，一键批量生产有声漫画，让漫画创作自动化</p>
+                    <p class="project-desc">基于 AI 的漫画短剧自动生成工作流，一键批量生产有声漫画</p>
                     <a href="https://comic.lancy.site" class="project-link" target="_blank">
-                        进入项目
+                        访问项目
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
@@ -389,9 +266,9 @@
                 </div>
                 <div class="project-content">
                     <h3 class="project-title">电商生视频</h3>
-                    <p class="project-desc">商品图片一键转化为带货短视频，智能文案撰写+AI配音+动态转场，短视频生产全自动化</p>
+                    <p class="project-desc">商品图片一键转化为带货短视频，智能文案+AI配音+动态转场</p>
                     <a href="https://ecommerce.lancy.site" class="project-link" target="_blank">
-                        进入项目
+                        访问项目
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
@@ -405,27 +282,25 @@
                 </div>
                 <div class="project-content">
                     <h3 class="project-title">公众号优化</h3>
-                    <p class="project-desc">个人公众号文章一键排版、配图生成、标题优化一站式工作流，提升内容创作效率</p>
+                    <p class="project-desc">个人公众号文章一键排版、配图生成、标题优化一站式工作流</p>
                     <a href="https://blog.lancy.site" class="project-link" target="_blank">
-                        进入项目
+                        访问项目
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
                     </a>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
     <!-- Footer -->
     <footer>
         <div class="footer-content">
-            <div class="footer-copyright">
-                © 2026 Lancy.site · 由 AI 辅助建造
-            </div>
+            <div class="copyright">© 2026 Lancy.site</div>
             <div class="footer-links">
                 <a href="https://github.com/robin-fc" class="footer-link" target="_blank">GitHub</a>
-                <a href="https://robin-fc.github.io/" class="footer-link" target="_blank">个人博客</a>
+                <a href="https://robin-fc.github.io/" class="footer-link" target="_blank">Blog</a>
             </div>
         </div>
     </footer>
