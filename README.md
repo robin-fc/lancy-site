@@ -9,6 +9,8 @@
 - 🎬 [AI 漫剧工作流](https://comic.lancy.site) - AI 漫剧自动生成
 - 🛒 [电商生视频工作流](https://ecommerce.lancy.site) - 商品短视频 AI 生成
 - 📢 [公众号一键优化工作流](https://blog.lancy.site) - 公众号内容创作工具
+- 🔍 [降AI率图文](https://humanize.lancy.site) - 自动优化图文内容，降AI率
+- 📈 [AI 量化交易](https://quant.lancy.site) - 基于 AI 的量化交易系统
 
 ## 技术栈
 
