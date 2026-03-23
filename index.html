@@ -105,7 +105,6 @@
             height: 200px;
             overflow: hidden;
             border-bottom: 1px solid var(--border);
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -117,11 +116,6 @@
             height: 100%;
             object-fit: cover;
             display: block;
-        }
-
-        .project-image .placeholder-icon {
-            font-size: 48px;
-            opacity: 0.9;
         }
 
         .project-tag {
@@ -142,12 +136,9 @@
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
-        .project-tag.ai {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-        }
-
-        .project-tag.trading {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        .placeholder-icon {
+            font-size: 48px;
+            opacity: 0.9;
         }
 
         .project-content {
@@ -268,10 +259,10 @@
         </section>
 
         <section class="projects-grid">
-            <!-- 现有项目 -->
+            <!-- AI 漫剧 - 恢复原图 -->
             <div class="project-card">
-                <div class="project-image" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                    <span class="placeholder-icon">🎬</span>
+                <div class="project-image">
+                    <img src="images/generated_image_1773826831_0.jpg" alt="AI 漫剧工作流">
                 </div>
                 <div class="project-content">
                     <h3 class="project-title">AI 漫剧</h3>
@@ -285,9 +276,10 @@
                 </div>
             </div>
 
+            <!-- 电商生视频 - 恢复原图 -->
             <div class="project-card">
-                <div class="project-image" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                    <span class="placeholder-icon">🛒</span>
+                <div class="project-image">
+                    <img src="images/generated_image_1773826864_0.jpg" alt="电商生视频工作流">
                 </div>
                 <div class="project-content">
                     <h3 class="project-title">电商生视频</h3>
@@ -301,9 +293,10 @@
                 </div>
             </div>
 
+            <!-- 公众号优化 - 恢复原图 -->
             <div class="project-card">
-                <div class="project-image" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                    <span class="placeholder-icon">📝</span>
+                <div class="project-image">
+                    <img src="images/generated_image_1773826890_0.jpg" alt="公众号优化工作流">
                 </div>
                 <div class="project-content">
                     <h3 class="project-title">公众号优化</h3>
@@ -317,7 +310,7 @@
                 </div>
             </div>
 
-            <!-- 新增：降低AI率图文工具 -->
+            <!-- 降AI率图文 - 渐变占位 -->
             <div class="project-card">
                 <div class="project-image" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
                     <span class="project-tag new">NEW</span>
@@ -335,7 +328,7 @@
                 </div>
             </div>
 
-            <!-- 新增：AI量化平台 -->
+            <!-- AI量化交易 - 渐变占位 -->
             <div class="project-card">
                 <div class="project-image" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
                     <span class="project-tag new">NEW</span>
