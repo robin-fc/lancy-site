@@ -1,13 +1,110 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lancy - AI 创意工作流集合</title>
-    <meta name="description" content="个人 AI 创意工具集合，汇集 AI 漫剧生成、电商短视频生成、降低AI率图文、AI量化交易">
+    <title>Lancy - AI 创意工作流集合 | AI 漫剧、电商视频、图文优化工具</title>
+    <meta name="description" content="Lancy AI 创意工作流集合，汇集 AI 漫剧自动生成、电商短视频批量制作、降低AI检测率图文优化、AI海报生成、AI量化交易等实用 AI 工具，持续更新中。">
+    <meta name="keywords" content="AI漫剧, AI视频生成, 电商带货视频, AI图文优化, 降AI率, AI海报生成, 量化交易, AI工具集, AI工作流">
+    <meta name="author" content="Lancy">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://lancy.site/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://lancy.site/">
+    <meta property="og:title" content="Lancy - AI 创意工作流集合">
+    <meta property="og:description" content="汇集 AI 漫剧生成、电商短视频、图文优化、海报生成等实用 AI 工作流工具，持续更新中。">
+    <meta property="og:image" content="https://lancy.site/images/og-image.png">
+    <meta property="og:locale" content="zh_CN">
+    <meta property="og:site_name" content="Lancy AI 工具集">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Lancy - AI 创意工作流集合">
+    <meta name="twitter:description" content="汇集 AI 漫剧生成、电商短视频、图文优化、海报生成等实用 AI 工作流工具。">
+    <meta name="twitter:image" content="https://lancy.site/images/og-image.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Lancy AI 创意工作流集合",
+      "url": "https://lancy.site/",
+      "description": "个人 AI 工具集，汇集实用 AI 创意生产力工作流",
+      "author": {
+        "@type": "Person",
+        "name": "Lancy",
+        "url": "https://github.com/robin-fc"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.google.com/search?q=site:lancy.site {search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      "name": "AI 工作流工具列表",
+      "itemListElement": [
+        {
+          "@type": "SoftwareApplication",
+          "position": 1,
+          "name": "AI 漫剧",
+          "url": "https://comic.lancy.site",
+          "description": "基于 AI 的漫画短剧自动生成工作流，一键批量生产有声漫画"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "position": 2,
+          "name": "电商生视频",
+          "url": "https://ecommerce.lancy.site",
+          "description": "商品图片一键转化为带货短视频，智能文案+AI配音+动态转场"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "position": 3,
+          "name": "公众号优化",
+          "url": "https://blog.lancy.site",
+          "description": "个人公众号文章一键排版、配图生成、标题优化一站式工作流"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "position": 4,
+          "name": "降AI率图文",
+          "url": "https://noai.lancy.site",
+          "description": "AI 改写工具，把 ChatGPT/Claude 生成的内容变得自然流畅，降低 AI 检测率"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "position": 5,
+          "name": "AI 海报生成",
+          "url": "https://poster.lancy.site",
+          "description": "输入文案自动生成精美海报，支持多种尺寸和风格"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "position": 6,
+          "name": "AI 量化交易",
+          "url": "https://quant.lancy.site",
+          "description": "AI 驱动的量化投资策略平台，智能分析市场数据，生成交易信号"
+        }
+      ]
+    }
+    </script>
+
     <style>
         * {
             margin: 0;
@@ -34,6 +131,11 @@
             background: var(--bg);
             color: var(--text-primary);
             min-height: 100vh;
+        }
+
+        a:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
         }
 
         header {
@@ -248,129 +350,125 @@
     </style>
 </head>
 <body>
-    <header>
-        <a href="#" class="logo">Lancy</a>
+    <header role="banner">
+        <a href="/" class="logo" aria-label="Lancy 首页">Lancy</a>
     </header>
 
-    <main class="container">
-        <section class="intro">
-            <h1>AI 创意<br>工作流集合</h1>
+    <main class="container" role="main">
+        <section class="intro" aria-labelledby="main-heading">
+            <h1 id="main-heading">AI 创意<br>工作流集合</h1>
             <p>个人兴趣打造的 AI 工具集，汇集实用 AI 创意生产力工作流。持续扩展中...</p>
         </section>
 
-        <section class="projects-grid">
-            <!-- AI 漫剧 - 恢复原图 -->
-            <div class="project-card">
-                <div class="project-image">
-                    <img src="images/generated_image_1773826831_0.jpg" alt="AI 漫剧工作流">
-                </div>
+        <section class="projects-grid" aria-label="AI 工作流项目列表">
+            <article class="project-card">
+                <figure class="project-image">
+                    <img src="images/generated_image_1773826831_0.jpg" alt="AI 漫剧工作流演示图 - 漫画风格短剧自动生成界面" loading="lazy" width="340" height="200">
+                </figure>
                 <div class="project-content">
-                    <h3 class="project-title">AI 漫剧</h3>
+                    <h2 class="project-title">AI 漫剧</h2>
                     <p class="project-desc">基于 AI 的漫画短剧自动生成工作流，一键批量生产有声漫画</p>
-                    <a href="https://comic.lancy.site" class="project-link" target="_blank">
+                    <a href="https://comic.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
                         访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
                     </a>
                 </div>
-            </div>
+            </article>
 
-            <!-- 电商生视频 - 恢复原图 -->
-            <div class="project-card">
-                <div class="project-image">
-                    <img src="images/generated_image_1773826864_0.jpg" alt="电商生视频工作流">
-                </div>
+            <article class="project-card">
+                <figure class="project-image">
+                    <img src="images/generated_image_1773826864_0.jpg" alt="电商生视频工作流演示图 - 商品图片转带货短视频界面" loading="lazy" width="340" height="200">
+                </figure>
                 <div class="project-content">
-                    <h3 class="project-title">电商生视频</h3>
+                    <h2 class="project-title">电商生视频</h2>
                     <p class="project-desc">商品图片一键转化为带货短视频，智能文案+AI配音+动态转场</p>
-                    <a href="https://ecommerce.lancy.site" class="project-link" target="_blank">
+                    <a href="https://ecommerce.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
                         访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
                     </a>
                 </div>
-            </div>
+            </article>
 
-            <!-- 公众号优化 - 恢复原图 -->
-            <div class="project-card">
-                <div class="project-image">
-                    <img src="images/generated_image_1773826890_0.jpg" alt="公众号优化工作流">
-                </div>
+            <article class="project-card">
+                <figure class="project-image">
+                    <img src="images/generated_image_1773826890_0.jpg" alt="公众号优化工作流演示图 - 文章排版配图生成界面" loading="lazy" width="340" height="200">
+                </figure>
                 <div class="project-content">
-                    <h3 class="project-title">公众号优化</h3>
+                    <h2 class="project-title">公众号优化</h2>
                     <p class="project-desc">个人公众号文章一键排版、配图生成、标题优化一站式工作流</p>
-                    <a href="https://blog.lancy.site" class="project-link" target="_blank">
+                    <a href="https://blog.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
                         访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
                     </a>
                 </div>
-            </div>
+            </article>
 
-            <!-- 降AI率图文 - 渐变占位 -->
-            <div class="project-card">
-                 <div class="project-image">
-                    <img src="images/noai.jpg" alt="降AI率图文">
-                </div>
+            <article class="project-card">
+                <figure class="project-image">
+                    <img src="images/noai.jpg" alt="降AI率图文工具演示图 - AI 改写降低检测率界面" loading="lazy" width="340" height="200">
+                </figure>
                 <div class="project-content">
-                    <h3 class="project-title">降AI率图文</h3>
+                    <h2 class="project-title">降AI率图文</h2>
                     <p class="project-desc">AI 改写工具，把 ChatGPT/Claude 生成的内容变得自然流畅，降低 AI 检测率。支持多种风格：口语化、严肃、幽默</p>
-                    <a href="https://noai.lancy.site" class="project-link" target="_blank">
+                    <a href="https://noai.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
                         访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
                     </a>
                 </div>
-            </div>
-            <!-- GPT Image 2 海报生成 -->
-            <div class="project-card">
-                <div class="project-image">
-                    <img src="images/poster.png" alt="AI 海报生成">
-                </div>
+            </article>
+
+            <article class="project-card">
+                <figure class="project-image">
+                    <span class="project-tag new">NEW</span>
+                    <img src="images/poster.png" alt="AI 海报生成工具演示图 - 文案转精美海报界面" loading="lazy" width="340" height="200">
+                </figure>
                 <div class="project-content">
-                    <h3 class="project-title">AI 海报生成</h3>
+                    <h2 class="project-title">AI 海报生成</h2>
                     <p class="project-desc">基于 GPT Image 2 的 AI 海报生成工具，输入文案自动生成精美海报，支持多种尺寸和风格。</p>
-                    <a href="https://poster.lancy.site" class="project-link" target="_blank">
+                    <a href="https://poster.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
                         访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
                     </a>
                 </div>
-            </div>
+            </article>
 
-            
-
-            <!-- AI量化交易 - 渐变占位 -->
-            <div class="project-card">
-                 <div class="project-image">
-                    <img src="images/quant.jpg" alt="AI 量化交易">
-                </div>
+            <article class="project-card">
+                <figure class="project-image">
+                    <img src="images/quant.jpg" alt="AI 量化交易平台演示图 - 市场数据分析与交易信号界面" loading="lazy" width="340" height="200">
+                </figure>
                 <div class="project-content">
-                    <h3 class="project-title">AI 量化交易</h3>
+                    <h2 class="project-title">AI 量化交易</h2>
                     <p class="project-desc">AI 驱动的量化投资策略平台，智能分析市场数据，生成交易信号。支持多币种、多策略组合</p>
-                    <a href="https://quant.lancy.site" class="project-link" target="_blank">
+                    <a href="https://quant.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
                         访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                         </svg>
                     </a>
                 </div>
-            </div>
+            </article>
         </section>
     </main>
 
-    <footer>
+    <footer role="contentinfo">
         <div class="footer-content">
-            <div class="copyright">© 2026 Lancy.site</div>
-            <div class="footer-links">
-                <a href="https://github.com/robin-fc" class="footer-link" target="_blank">GitHub</a>
-                <a href="https://robin-fc.github.io/" class="footer-link" target="_blank">Blog</a>
-            </div>
+            <div class="copyright">© 2026 Lancy.site - AI 创意工具集</div>
+            <nav aria-label="底部导航">
+                <div class="footer-links">
+                    <a href="https://github.com/robin-fc" class="footer-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+                    <a href="https://robin-fc.github.io/" class="footer-link" target="_blank" rel="noopener noreferrer">Blog</a>
+                </div>
+            </nav>
         </div>
     </footer>
 </body>
