@@ -11,7 +11,7 @@
 | 🎬 AI 漫剧工作流 | [comic.lancy.site](https://comic.lancy.site) | AI 漫剧自动生成 |
 | 🛒 电商生视频 | [ecommerce.lancy.site](https://ecommerce.lancy.site) | 商品短视频 AI 生成 |
 | 📝 公众号优化 | [blog.lancy.site](https://blog.lancy.site) | 公众号内容创作工具 |
-| 🔍 降 AI 率图文 | [noai.lancy.site](https://noai.lancy.site) | 自动优化图文，降 AI 率 |
+| 📈 AI 选股器 | [stock.lancy.site](https://stock.lancy.site) | AI 驱动的智能选股平台 |
 | 🎨 AI 海报生成 | [poster.lancy.site](https://poster.lancy.site) | 输入文案自动生成精美海报 |
 | 📈 AI 量化交易 | [quant.lancy.site](https://quant.lancy.site) | 基于 AI 的量化交易系统 |
 
