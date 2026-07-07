@@ -8,7 +8,7 @@
 
 | 项目 | 链接 | 说明 |
 |------|------|------|
-| 🎬 AI 漫剧工作流 | [comic.lancy.site](https://comic.lancy.site) | AI 漫剧自动生成 |
+| 📄 AI 简历助手 | [resume.lancy.site](https://resume.lancy.site) | JD 匹配、ATS 检查与简历改写 |
 | 🛒 电商生视频 | [ecommerce.lancy.site](https://ecommerce.lancy.site) | 商品短视频 AI 生成 |
 | 📝 公众号优化 | [blog.lancy.site](https://blog.lancy.site) | 公众号内容创作工具 |
 | 📈 AI 选股器 | [stock.lancy.site](https://stock.lancy.site) | AI 驱动的智能选股平台 |
