@@ -1,6 +1,6 @@
 # lancy.site
 
-个人 AI 工作流作品集入口站点
+Lancy（兰心）AI 实验室数字星球入口站点
 
 ## 项目介绍
 
@@ -30,8 +30,9 @@
 
 ## 技术栈
 
-- 纯静态 HTML + CSS
-- 部署在 GitHub Pages
+- 纯静态 HTML + CSS + JavaScript
+- Three.js 数字星球与 DOM 投影交互
+- 无构建步骤，部署在 GitHub Pages
 
 ## 部署
 
@@ -40,29 +41,14 @@
 
 ## 添加新项目
 
-在 `index.html` 的 `<section class="projects-grid">` 中添加新卡片：
+在 `js/projects.js` 中新增项目配置，包括名称、链接、缩略图、星球坐标和地点圈尺寸。页面会自动生成星球地点与底部实验索引。
 
-```html
-<article class="project-card">
-    <figure class="project-image">
-        <span class="project-tag new">NEW</span>
-        <img src="images/your-cover.jpg" alt="项目名称 - 功能简介" loading="lazy" width="340" height="200">
-    </figure>
-    <div class="project-content">
-        <h2 class="project-title">项目名称</h2>
-        <p class="project-desc">项目功能描述</p>
-        <a href="https://your-project.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
-            访问项目
-            <svg ...>...</svg>
-        </a>
-    </div>
-</article>
-```
-
-添加后更新：
+添加后同步更新：
 1. `sitemap.xml` — 新增 `<url>` 条目
-2. `README.md` 项目表格
-3. `index.html` JSON-LD 的 `ItemList` 中的 `itemListElement`
+2. `README.md` — 更新项目表格
+3. `index.html` — 更新 JSON-LD 的 `ItemList`
+
+设计稿保存在 `design/lancy-lab-ui-concept.svg`，Three.js 渲染逻辑位于 `js/planet.js`，项目面板与背景图切换位于 `js/app.js`。
 
 ## License
 

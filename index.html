@@ -1,476 +1,149 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lancy - AI 创意工作流集合 | AI 简历助手、电商视频、智能选股工具</title>
-    <meta name="description" content="Lancy AI 创意工作流集合，汇集 AI 简历助手、电商短视频批量制作、AI选股器、AI海报生成、AI量化交易等实用 AI 工具，持续更新中。">
-    <meta name="keywords" content="AI简历助手, 简历优化, ATS简历, AI视频生成, 电商带货视频, AI选股器, 智能选股, AI海报生成, 量化交易, AI工具集, AI工作流">
-    <meta name="author" content="Lancy">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://lancy.site/">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#041018">
+  <title>Lancy · 兰心 AI 实验室</title>
+  <meta name="description" content="Lancy 兰心 AI 实验室，以数字星球连接 AI 简历、内容创作、视觉生成、智能选股与量化研究等持续生长的个人实验。">
+  <meta name="keywords" content="Lancy,兰心,AI实验室,AI简历助手,AI视频生成,AI选股器,AI海报生成,量化交易,AI工具">
+  <meta name="author" content="Lancy">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://lancy.site/">
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://lancy.site/">
-    <meta property="og:title" content="Lancy - AI 创意工作流集合">
-    <meta property="og:description" content="汇集 AI 简历助手、电商短视频、智能选股、海报生成等实用 AI 工作流工具，持续更新中。">
-    <meta property="og:image" content="https://lancy.site/images/og-image.png">
-    <meta property="og:locale" content="zh_CN">
-    <meta property="og:site_name" content="Lancy AI 工具集">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://lancy.site/">
+  <meta property="og:title" content="Lancy · 兰心 AI 实验室">
+  <meta property="og:description" content="一颗连接个人 AI 实验与作品的数字星球。">
+  <meta property="og:image" content="https://lancy.site/images/og-image.png">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:site_name" content="Lancy AI Lab">
 
-    <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Lancy - AI 创意工作流集合">
-    <meta name="twitter:description" content="汇集 AI 简历助手、电商短视频、智能选股、海报生成等实用 AI 工作流工具。">
-    <meta name="twitter:image" content="https://lancy.site/images/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Lancy · 兰心 AI 实验室">
+  <meta name="twitter:description" content="探索内容创作、投资研究、视觉生成与个人效率的 AI 实验。">
+  <meta name="twitter:image" content="https://lancy.site/images/og-image.png">
 
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='%2354edf5' stroke-width='5'/%3E%3Ccircle cx='50' cy='50' r='11' fill='%23ffa65a'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
 
-    <!-- Preconnect -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- JSON-LD Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Lancy AI 创意工作流集合",
-      "url": "https://lancy.site/",
-      "description": "个人 AI 工具集，汇集实用 AI 创意生产力工作流",
-      "author": {
-        "@type": "Person",
-        "name": "Lancy",
-        "url": "https://github.com/robin-fc"
-      },
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://www.google.com/search?q=site:lancy.site {search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "ItemList",
-      "name": "AI 工作流工具列表",
-      "itemListElement": [
-        {
-          "@type": "SoftwareApplication",
-          "position": 1,
-          "name": "AI 简历助手",
-          "url": "https://resume.lancy.site",
-          "description": "基于 Magic Resume 思路的简历优化助手，支持 JD 匹配、ATS 检查与 AI 改写建议"
-        },
-        {
-          "@type": "SoftwareApplication",
-          "position": 2,
-          "name": "电商生视频",
-          "url": "https://ecommerce.lancy.site",
-          "description": "商品图片一键转化为带货短视频，智能文案+AI配音+动态转场"
-        },
-        {
-          "@type": "SoftwareApplication",
-          "position": 3,
-          "name": "公众号优化",
-          "url": "https://blog.lancy.site",
-          "description": "个人公众号文章一键排版、配图生成、标题优化一站式工作流"
-        },
-        {
-          "@type": "SoftwareApplication",
-          "position": 4,
-          "name": "AI 选股器",
-          "url": "https://stock.lancy.site",
-          "description": "AI 驱动的智能选股平台，基于技术指标和人工智能分析，每日生成精准选股信号"
-        },
-        {
-          "@type": "SoftwareApplication",
-          "position": 5,
-          "name": "AI 海报生成",
-          "url": "https://poster.lancy.site",
-          "description": "输入文案自动生成精美海报，支持多种尺寸和风格"
-        },
-        {
-          "@type": "SoftwareApplication",
-          "position": 6,
-          "name": "AI 量化交易",
-          "url": "https://quant.lancy.site",
-          "description": "AI 驱动的量化投资策略平台，智能分析市场数据，生成交易信号"
-        }
-      ]
-    }
-    </script>
-
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg: #fafafa;
-            --text-primary: #111111;
-            --text-secondary: #666666;
-            --border: #e5e5e5;
-            --card-hover: #f5f5f5;
-            --accent: #111111;
-            --white: #ffffff;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
-
-        a:focus-visible {
-            outline: 2px solid #3b82f6;
-            outline-offset: 2px;
-        }
-
-        header {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 60px 40px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.03em;
-            color: var(--text-primary);
-            text-decoration: none;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 40px;
-        }
-
-        .intro {
-            margin-bottom: 80px;
-        }
-
-        .intro h1 {
-            font-size: 72px;
-            font-weight: 700;
-            letter-spacing: -0.04em;
-            line-height: 1.1;
-            margin-bottom: 32px;
-            color: var(--text-primary);
-        }
-
-        .intro p {
-            font-size: 20px;
-            line-height: 1.6;
-            color: var(--text-secondary);
-            max-width: 600px;
-        }
-
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 32px;
-            margin-bottom: 120px;
-        }
-
-        .project-card {
-            background: var(--white);
-            border: 1px solid var(--border);
-            border-radius: 0;
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-
-        .project-card:hover {
-            background: var(--card-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-        }
-
-        .project-image {
-            width: 100%;
-            height: 200px;
-            overflow: hidden;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-
-        .project-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .project-tag {
-            position: absolute;
-            top: 12px;
-            left: 12px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            font-size: 11px;
-            font-weight: 500;
-            padding: 4px 10px;
-            border-radius: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .project-tag.new {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        }
-
-        .placeholder-icon {
-            font-size: 48px;
-            opacity: 0.9;
-        }
-
-        .project-content {
-            padding: 24px;
-        }
-
-        .project-title {
-            font-size: 22px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 10px;
-            letter-spacing: -0.02em;
-        }
-
-        .project-desc {
-            font-size: 14px;
-            line-height: 1.6;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-        }
-
-        .project-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--accent);
-            text-decoration: none;
-            transition: gap 0.2s ease;
-        }
-
-        .project-link:hover {
-            gap: 12px;
-        }
-
-        .project-link svg {
-            width: 16px;
-            height: 16px;
-        }
-
-        footer {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 40px 60px;
-            border-top: 1px solid var(--border);
-        }
-
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .copyright {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .footer-links {
-            display: flex;
-            gap: 32px;
-        }
-
-        .footer-link {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 14px;
-            transition: color 0.2s ease;
-        }
-
-        .footer-link:hover {
-            color: var(--text-primary);
-        }
-
-        @media (max-width: 960px) {
-            .intro h1 {
-                font-size: 48px;
-            }
-        }
-
-        @media (max-width: 640px) {
-            header {
-                padding: 40px 20px 30px;
-            }
-            .container {
-                padding: 0 20px;
-            }
-            footer {
-                padding: 30px 20px 40px;
-            }
-            .intro h1 {
-                font-size: 42px;
-            }
-            .intro p {
-                font-size: 18px;
-            }
-            .projects-grid {
-                grid-template-columns: 1fr;
-            }
-            .footer-content {
-                flex-direction: column;
-                gap: 16px;
-                align-items: flex-start;
-            }
-        }
-    </style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Lancy · 兰心 AI 实验室",
+    "url": "https://lancy.site/",
+    "description": "个人 AI 实验与作品集合",
+    "author": {"@type":"Person","name":"Lancy","url":"https://github.com/robin-fc"}
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Lancy AI 实验列表",
+    "itemListElement": [
+      {"@type":"SoftwareApplication","position":1,"name":"AI 简历助手","url":"https://resume.lancy.site"},
+      {"@type":"SoftwareApplication","position":2,"name":"电商生视频","url":"https://ecommerce.lancy.site"},
+      {"@type":"SoftwareApplication","position":3,"name":"公众号优化","url":"https://blog.lancy.site"},
+      {"@type":"SoftwareApplication","position":4,"name":"AI 选股器","url":"https://stock.lancy.site"},
+      {"@type":"SoftwareApplication","position":5,"name":"AI 海报生成","url":"https://poster.lancy.site"},
+      {"@type":"SoftwareApplication","position":6,"name":"AI 量化交易","url":"https://quant.lancy.site"}
+    ]
+  }
+  </script>
 </head>
 <body>
-    <header role="banner">
-        <a href="/" class="logo" aria-label="Lancy 首页">Lancy</a>
+  <div class="app" id="app" data-state="idle">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Lancy 兰心 AI 实验室首页">
+        <span class="brand-name">LANCY</span>
+        <span class="brand-sub">兰心 · ARTIFICIAL INTELLIGENCE LAB</span>
+      </a>
+      <div class="system-status" aria-label="系统在线">
+        <span class="status-copy">SYSTEM / ONLINE</span>
+        <span class="status-light"></span>
+        <time id="clock">UTC+8 / --:--:--</time>
+      </div>
     </header>
 
-    <main class="container" role="main">
-        <section class="intro" aria-labelledby="main-heading">
-            <h1 id="main-heading">AI 创意<br>工作流集合</h1>
-            <p>个人兴趣打造的 AI 工具集，汇集实用 AI 创意生产力工作流。持续扩展中...</p>
-        </section>
+    <main class="lab" id="lab">
+      <div class="scene" id="scene" aria-hidden="true"></div>
+      <div class="grid-plane" aria-hidden="true"></div>
+      <div class="scanline" aria-hidden="true"></div>
 
-        <section class="projects-grid" aria-label="AI 工作流项目列表">
-            <article class="project-card">
-                <figure class="project-image">
-                    <img src="images/resume.svg" alt="AI 简历助手演示图 - 简历评分、JD 匹配与改写建议界面" loading="lazy" width="340" height="200">
-                </figure>
-                <div class="project-content">
-                    <h2 class="project-title">AI 简历助手</h2>
-                    <p class="project-desc">粘贴简历与目标 JD，快速获得岗位匹配度、ATS 检查和更有结果感的 AI 改写建议</p>
-                    <a href="https://resume.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
-                        访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                </div>
-            </article>
+      <section class="intro-panel hud-panel" aria-labelledby="main-heading">
+        <span class="eyebrow">PLANETARY ARCHIVE / 2026</span>
+        <h1 id="main-heading"><span>兰心</span> AI 实验室</h1>
+        <p class="intro-lead">一颗连接个人 AI 实验与作品的数字星球。</p>
+        <p class="intro-author">Lancy，独立开发者与 AI 实践者。这里收集关于内容创作、投资研究、视觉生成与个人效率的实验，每一处坐标都是一个持续生长的作品。</p>
+        <div class="intro-command">
+          <span class="command-dot"></span>
+          <span>选择星球上的实验坐标</span>
+        </div>
+      </section>
 
-            <article class="project-card">
-                <figure class="project-image">
-                    <img src="images/generated_image_1773826864_0.jpg" alt="电商生视频工作流演示图 - 商品图片转带货短视频界面" loading="lazy" width="340" height="200">
-                </figure>
-                <div class="project-content">
-                    <h2 class="project-title">电商生视频</h2>
-                    <p class="project-desc">商品图片一键转化为带货短视频，智能文案+AI配音+动态转场</p>
-                    <a href="https://ecommerce.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
-                        访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                </div>
-            </article>
+      <div class="markers" id="markers" aria-label="星球实验地点"></div>
 
-            <article class="project-card">
-                <figure class="project-image">
-                    <img src="images/generated_image_1773826890_0.jpg" alt="公众号优化工作流演示图 - 文章排版配图生成界面" loading="lazy" width="340" height="200">
-                </figure>
-                <div class="project-content">
-                    <h2 class="project-title">公众号优化</h2>
-                    <p class="project-desc">个人公众号文章一键排版、配图生成、标题优化一站式工作流</p>
-                    <a href="https://blog.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
-                        访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                </div>
-            </article>
+      <section class="project-stage" id="project-stage" aria-live="polite" aria-hidden="true">
+        <button class="close-project" id="close-project" type="button" aria-label="关闭项目预览">
+          <span></span><span></span>
+        </button>
 
-            <article class="project-card">
-                <figure class="project-image">
-                    <span class="project-tag new">NEW</span>
-                    <img src="images/stock.jpg" alt="AI选股器演示图 - 智能选股信号与技术分析界面" loading="lazy" width="340" height="200">
-                </figure>
-                <div class="project-content">
-                    <h2 class="project-title">AI 选股器</h2>
-                    <p class="project-desc">AI 驱动的智能选股平台，基于技术指标和人工智能分析，每日生成精准选股信号。支持自选股管理、深度分析报告</p>
-                    <a href="https://stock.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
-                        访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                </div>
-            </article>
+        <article class="project-info hud-panel">
+          <img class="project-info-bg" id="preview-fallback" src="images/stock.jpg" alt="" aria-hidden="true">
+          <div class="project-info-shade" aria-hidden="true"></div>
+          <div class="project-info-content">
+            <span class="project-coordinate" id="project-coordinate">LAB COORDINATE 04</span>
+            <h2 id="project-title">AI 选股器</h2>
+            <p class="project-kicker" id="project-kicker">SIGNAL INTELLIGENCE</p>
+            <div class="info-rule"></div>
+            <p class="project-description" id="project-description"></p>
+            <span class="capability-label">CAPABILITIES</span>
+            <ul class="capability-list" id="capability-list"></ul>
+            <a class="enter-project" id="enter-project" href="https://stock.lancy.site" target="_blank" rel="noopener noreferrer">
+              <span>进入实验</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l8 8-8 8M15 12H2"/></svg>
+            </a>
+            <span class="lock-note">PROJECT SNAPSHOT / READ ONLY</span>
+          </div>
+        </article>
+      </section>
 
-            <article class="project-card">
-                <figure class="project-image">
-                    <span class="project-tag new">NEW</span>
-                    <img src="images/poster.png" alt="AI 海报生成工具演示图 - 文案转精美海报界面" loading="lazy" width="340" height="200">
-                </figure>
-                <div class="project-content">
-                    <h2 class="project-title">AI 海报生成</h2>
-                    <p class="project-desc">基于 GPT Image 2 的 AI 海报生成工具，输入文案自动生成精美海报，支持多种尺寸和风格。</p>
-                    <a href="https://poster.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
-                        访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                </div>
-            </article>
-
-            <article class="project-card">
-                <figure class="project-image">
-                    <img src="images/quant.jpg" alt="AI 量化交易平台演示图 - 市场数据分析与交易信号界面" loading="lazy" width="340" height="200">
-                </figure>
-                <div class="project-content">
-                    <h2 class="project-title">AI 量化交易</h2>
-                    <p class="project-desc">AI 驱动的量化投资策略平台，智能分析市场数据，生成交易信号。支持多币种、多策略组合</p>
-                    <a href="https://quant.lancy.site" class="project-link" target="_blank" rel="noopener noreferrer">
-                        访问项目
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
-                </div>
-            </article>
-        </section>
+      <nav class="lab-index" id="lab-index" aria-label="实验索引"></nav>
+      <div class="planet-meta" aria-hidden="true">
+        <span>PLANETARY INDEX</span>
+        <strong><b id="active-count">06</b> ACTIVE LABS</strong>
+      </div>
     </main>
 
-    <footer role="contentinfo">
-        <div class="footer-content">
-            <div class="copyright">© 2026 Lancy.site - AI 创意工具集</div>
-            <nav aria-label="底部导航">
-                <div class="footer-links">
-                    <a href="https://github.com/robin-fc" class="footer-link" target="_blank" rel="noopener noreferrer">GitHub</a>
-                    <a href="https://robin-fc.github.io/" class="footer-link" target="_blank" rel="noopener noreferrer">Blog</a>
-                </div>
-            </nav>
-        </div>
+    <footer class="footerbar">
+      <span>ORBITAL NODE / LANCY.SITE</span>
+      <nav aria-label="外部链接">
+        <a href="https://github.com/robin-fc" target="_blank" rel="noopener noreferrer">GITHUB</a>
+        <a href="https://robin-fc.github.io/" target="_blank" rel="noopener noreferrer">BLOG</a>
+      </nav>
     </footer>
+
+    <div class="loader" id="loader" role="status" aria-label="正在加载数字星球">
+      <div class="loader-orbit"><span></span></div>
+      <span class="loader-label">INITIALIZING PLANET</span>
+    </div>
+  </div>
+
+  <noscript>
+    <section class="noscript-fallback">
+      <h1>Lancy · 兰心 AI 实验室</h1>
+      <p>请启用 JavaScript 体验数字星球，或直接访问以下实验：</p>
+      <a href="https://resume.lancy.site">AI 简历助手</a>
+      <a href="https://ecommerce.lancy.site">电商生视频</a>
+      <a href="https://blog.lancy.site">公众号优化</a>
+      <a href="https://stock.lancy.site">AI 选股器</a>
+      <a href="https://poster.lancy.site">AI 海报生成</a>
+      <a href="https://quant.lancy.site">AI 量化交易</a>
+    </section>
+  </noscript>
+
+  <script type="module" src="js/app.js"></script>
 </body>
 </html>
