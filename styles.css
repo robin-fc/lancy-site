@@ -113,7 +113,7 @@ a:focus-visible {
 .brand-sub {
   margin-top: 7px;
   color: #75b9c1;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.26em;
 }
 
@@ -124,7 +124,7 @@ a:focus-visible {
   align-items: center;
   justify-items: end;
   color: #79c4ca;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.22em;
 }
 
@@ -231,7 +231,7 @@ a:focus-visible {
 .project-coordinate,
 .capability-label {
   color: var(--cyan);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.24em;
 }
 
@@ -270,7 +270,7 @@ a:focus-visible {
   gap: 12px;
   border-top: 1px solid rgba(108, 226, 232, 0.13);
   color: #9cd8dc;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.12em;
 }
 
@@ -355,7 +355,7 @@ a:focus-visible {
   width: max-content;
   max-width: 150px;
   color: #bdeef0;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.14em;
   text-align: left;
   text-shadow: 0 2px 6px #001016;
@@ -542,7 +542,7 @@ a:focus-visible {
 .project-kicker {
   margin: 0;
   color: var(--orange);
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.22em;
 }
 
@@ -576,7 +576,7 @@ a:focus-visible {
 
 .capability-list li {
   color: #b7e2e4;
-  font-size: 9px;
+  font-size: 12px;
   letter-spacing: 0.08em;
 }
 
@@ -597,7 +597,7 @@ a:focus-visible {
   border: 1px solid rgba(103, 232, 239, 0.4);
   color: #e8ffff;
   background: rgba(13, 46, 59, 0.62);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0.2em;
   text-decoration: none;
   transition: border-color 0.25s, background 0.25s, transform 0.25s;
@@ -620,7 +620,7 @@ a:focus-visible {
   display: block;
   margin-top: 21px;
   color: #3c6a71;
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.15em;
 }
 
@@ -644,7 +644,7 @@ a:focus-visible {
   border: 0;
   color: #507c82;
   background: transparent;
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.12em;
   text-align: left;
   cursor: pointer;
@@ -670,13 +670,13 @@ a:focus-visible {
   flex-direction: column;
   gap: 8px;
   color: #47747b;
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.18em;
 }
 
 .planet-meta strong {
   color: #a8d8db;
-  font-size: 9px;
+  font-size: 12px;
   font-weight: 400;
 }
 
@@ -699,7 +699,7 @@ a:focus-visible {
   border-top: 1px solid rgba(112, 229, 235, 0.08);
   color: #315b61;
   background: rgba(0, 5, 8, 0.34);
-  font-size: 7px;
+  font-size: 12px;
   letter-spacing: 0.18em;
 }
 
@@ -764,7 +764,7 @@ a:focus-visible {
 
 .loader-label {
   color: #6ab1b8;
-  font-size: 8px;
+  font-size: 12px;
   letter-spacing: 0.26em;
 }
 
@@ -778,7 +778,7 @@ a:focus-visible {
   border: 1px solid var(--line);
   color: var(--muted);
   background: rgba(3, 14, 21, 0.9);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .noscript-fallback {
@@ -815,7 +815,7 @@ a:focus-visible {
     width: min(43vw, 500px);
   }
   .project-info-content { padding: 32px 28px 28px; }
-  .project-description { font-size: 11px; }
+  .project-description { font-size: 12px; }
 }
 
 @media (max-width: 900px) {
@@ -881,16 +881,16 @@ a:focus-visible {
 }
 
 @media (max-width: 560px) {
-  .brand-sub { letter-spacing: 0.14em; }
+  .brand-sub { letter-spacing: 0.14em; font-size: 12px; }
   .system-status time { display: none; }
   .intro-panel { bottom: 55px; }
-  .eyebrow { font-size: 7px; }
-  .intro-command { font-size: 8px; }
+  .eyebrow { font-size: 12px; }
+  .intro-command { font-size: 12px; }
   .project-stage { top: 44%; }
   .project-info-content { padding: 27px 20px 30px; }
   .project-info h2 { margin-top: 15px; }
   .info-rule { margin: 20px 0 17px; }
-  .project-description { font-size: 11px; }
+  .project-description { font-size: 12px; }
   .planet-meta { left: 20px; }
 }
 

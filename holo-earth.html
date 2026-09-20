@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Holographic Earth · 全息地球</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+    canvas { display: block; }
+    #info {
+      position: fixed; bottom: 20px; left: 20px;
+      color: rgba(100, 255, 180, 0.6); font-family: monospace;
+      font-size: 12px; pointer-events: none; z-index: 10;
+      letter-spacing: 0.1em;
+    }
+  </style>
+  <!-- Import map: Three.js + post-processing + controls -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="info">HOLOGRAPHIC EARTH // 全息地球</div>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ─────────────────────────────────────────────
+    //  Scene / Camera / Renderer
+    // ─────────────────────────────────────────────
+    const scene    = new THREE.Scene();
+    scene.background = new THREE.Color(0x000000);  // 黑色背景
+
+    const camera   = new THREE.PerspectiveCamera(
+      45, window.innerWidth / window.innerHeight, 0.1, 100
+    );
+    camera.position.set(0, 0, 4.5);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
+    document.body.appendChild(renderer.domElement);
+
+    // ─────────────────────────────────────────────
+    //  OrbitControls: 鼠标拖拽旋转、滚轮缩放
+    // ─────────────────────────────────────────────
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping  = true;
+    controls.dampingFactor  = 0.06;
+    controls.minDistance     = 2.2;
+    controls.maxDistance     = 10;
+    controls.autoRotate     = false;   // 球体自转由 animate 控制
+    controls.enablePan      = false;
+
+    // ─────────────────────────────────────────────
+    //  Post-processing: EffectComposer + Bloom
+    // ─────────────────────────────────────────────
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+
+    const bloomPass = new UnrealBloomPass(
+      new THREE.Vector2(window.innerWidth, window.innerHeight),
+      1.8,   // strength — 辉光强度
+      0.4,   // radius  — 辉光扩散半径
+      0.15   // threshold — 触发辉光的亮度阈值（越低越容易触发）
+    );
+    composer.addPass(bloomPass);
+
+    // ─────────────────────────────────────────────
+    //  全局时间统一变量
+    // ─────────────────────────────────────────────
+    const clock = new THREE.Clock();
+
+    // ─────────────────────────────────────────────
+    //  Shader 1: 球面绿色点云 + 大陆发光轮廓
+    //
+    //  设计思路：
+    //    使用 GLSL 内置函数在片段着色器中直接生成图案，
+    //    无需加载任何纹理图片。
+    //    - 点阵：通过 UV 坐标取模产生规则网格，再用正弦扰动
+    //      模拟随机分布感，保留球面透视变形。
+    //    - 大陆轮廓：用多层叠加的 sine 噪声在经纬度空间
+    //      模拟大陆形状，阈值化后提取边缘线。
+    // ─────────────────────────────────────────────
+    const sphereVert = /* glsl */ `
+      varying vec2  vUv;
+      varying vec3  vNormal;
+      varying vec3  vPosition;
+
+      void main() {
+        vUv        = uv;          // 0~1 的经纬度 UV
+        vNormal    = normalize(normalMatrix * normal);
+        vPosition  = (modelViewMatrix * vec4(position, 1.0)).xyz;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+
+    const sphereFrag = /* glsl */ `
+      uniform float  uTime;
+      uniform vec3   uColor;
+      uniform float  uOpacity;
+
+      varying vec2  vUv;
+      varying vec3  vNormal;
+      varying vec3  vPosition;
+
+      // ── 简单伪随机 (基于坐标的确定性噪声) ──
+      float hash(vec2 p) {
+        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+      }
+
+      // ── 多层 sine 叠加噪声，模拟大陆分布 ──
+      float continentNoise(vec2 uv) {
+        vec2 p = uv * 6.28;                       // 映射到 0~2π
+        float n = 0.0;
+        n += sin(p.x * 1.5 + p.y * 0.8) * 0.50;
+        n += sin(p.x * 3.1 - p.y * 2.3 + 1.0) * 0.28;
+        n += sin(p.x * 7.0 + p.y * 5.0 + 2.0) * 0.14;
+        n += sin(p.x * 13.0 - p.y * 11.0) * 0.07;
+        n += sin(p.x * 25.0 + p.y * 19.0 + 3.0) * 0.035;
+        return n;
+      }
+
+      // ── 大陆边缘检测：在噪声值接近阈值处产生亮线 ──
+      float continentEdge(vec2 uv) {
+        float n  = continentNoise(uv);
+        float thr = 0.08;                         // 大陆阈值
+        float edgeW = 0.035;                      // 边缘线宽度
+        // 用 smoothstep 在阈值附近产生柔和边界
+        float continent = smoothstep(-edgeW, edgeW, n - thr);
+        // 再在大陆的内外两侧做梯度，提取边缘
+        float edge1 = smoothstep(edgeW * 0.5, -edgeW * 0.5, abs(n - thr));
+        // 让边缘更细更亮
+        return 1.0 - edge1;
+      }
+
+      void main() {
+        // ── 菲涅尔边缘光（球体轮廓发光） ──
+        vec3  viewDir  = normalize(-vPosition);
+        float fresnel  = pow(1.0 - max(dot(vNormal, viewDir), 0.0), 3.0);
+
+        // ── 点阵生成 ──
+        // 基础经纬网格
+        vec2 gridUV    = vUv * 80.0;               // 80×40 的网格密度
+        vec2 gridFrac  = fract(gridUV);
+        // 用正弦扰动打破绝对规则，模拟点阵随机感
+        float jitter   = hash(floor(gridUV)) * 0.35;
+        vec2  dist     = vec2(
+          length(gridFrac - 0.5 - jitter * 0.5),
+          length(gridFrac - 0.5 + jitter * 0.5)
+        );
+        // 只在靠近格子中心处显示点
+        float dotAlpha = 1.0 - smoothstep(0.0, 0.42, dist.x)
+                       * 1.0 - smoothstep(0.0, 0.42, dist.y);
+        // 叠加第二层更密的点（小点）
+        vec2  smallGrid = fract(vUv * 160.0);
+        float smallDot  = 1.0 - smoothstep(0.0, 0.35, length(smallGrid - 0.5));
+
+        // 点阵透明度随球面可见度衰减（背面变暗）
+        float facing   = max(dot(vNormal, viewDir), 0.0);
+        float faceFade = 0.15 + 0.85 * facing;
+        dotAlpha      *= faceFade;
+        smallDot     *= faceFade;
+
+        // ── 脉冲呼吸效果 ──
+        float pulse = 0.85 + 0.15 * sin(uTime * 1.2 + vUv.x * 3.0 + vUv.y * 2.0);
+
+        // ── 大陆发光轮廓 ──
+        float edge    = continentEdge(vUv);
+        float edgeGlow = edge * (0.6 + 0.4 * pulse) * faceFade;
+
+        // ── 组合颜色 ──
+        // 点阵：亮绿
+        vec3  dotColor   = uColor * (0.7 + 0.3 * pulse);
+        // 小点：稍淡
+        vec3  smallColor = uColor * 0.55;
+        // 大陆边缘：更亮的青绿色
+        vec3  edgeColor  = vec3(0.3, 1.0, 0.65) * 1.6;
+        // 菲涅尔边缘：淡青色
+        vec3  rimColor   = vec3(0.25, 0.85, 0.75) * 0.7;
+
+        // 混合各层
+        vec3  color = dotColor * dotAlpha
+                    + smallColor * smallDot * 0.5
+                    + edgeColor  * edgeGlow
+                    + rimColor   * fresnel;
+
+        // 整体透明度随时间微微呼吸
+        float alpha = uOpacity * (0.55 + 0.1 * sin(uTime * 0.7));
+        alpha = max(alpha, fresnel * 0.25);         // 边缘至少保持一定可见度
+
+        gl_FragColor = vec4(color, alpha);
+      }
+    `;
+
+    // 创建星球主体
+    const sphereGeo  = new THREE.IcosahedronGeometry(1.5, 5);       // 高细分球体
+    const sphereMat  = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime:   { value: 0 },
+        uColor:  { value: new THREE.Color(0x3aff8a) },             // 全息绿
+        uOpacity:{ value: 0.88 }
+      },
+      vertexShader:   sphereVert,
+      fragmentShader: sphereFrag,
+      transparent:    true,
+      blending:       THREE.AdditiveBlending,
+      side:           THREE.DoubleSide,
+      depthWrite:     false
+    });
+    const planet = new THREE.Mesh(sphereGeo, sphereMat);
+    scene.add(planet);
+
+    // ─────────────────────────────────────────────
+    //  内层暗球（填充球体内部，让正面不穿透）
+    // ─────────────────────────────────────────────
+    const innerGeo  = new THREE.IcosahedronGeometry(1.49, 4);
+    const innerMat  = new THREE.MeshBasicMaterial({
+      color: 0x000804,
+      transparent: true,
+      opacity: 0.96,
+      side: THREE.FrontSide
+    });
+    const innerSphere = new THREE.Mesh(innerGeo, innerMat);
+    scene.add(innerSphere);
+
+    // ─────────────────────────────────────────────
+    //  Shader 2: 外层淡绿色轨道环
+    // ─────────────────────────────────────────────
+    function createOrbitalRing(radius, tiltX, tiltY, color, opacity) {
+      const ringGeo = new THREE.TorusGeometry(radius, 0.006, 8, 180);
+      const ringMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime:   { value: 0 },
+          uColor:  { value: new THREE.Color(color) },
+          uOpacity:{ value: opacity }
+        },
+        vertexShader: /* glsl */ `
+          varying vec3 vNormal;
+          varying vec3 vPos;
+          void main() {
+            vNormal = normalize(normalMatrix * normal);
+            vPos    = (modelViewMatrix * vec4(position, 1.0)).xyz;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          uniform float  uTime;
+          uniform vec3   uColor;
+          uniform float  uOpacity;
+          varying vec3   vNormal;
+          varying vec3   vPos;
+          void main() {
+            vec3 viewDir = normalize(-vPos);
+            float fresnel = pow(1.0 - abs(dot(vNormal, viewDir)), 1.5);
+            float pulse   = 0.7 + 0.3 * sin(uTime * 0.8);
+            vec3  col     = uColor * (0.6 + 0.4 * fresnel) * pulse;
+            float alpha   = uOpacity * (0.4 + 0.6 * fresnel);
+            gl_FragColor = vec4(col, alpha);
+          }
+        `,
+        transparent:    true,
+        blending:       THREE.AdditiveBlending,
+        side:           THREE.DoubleSide,
+        depthWrite:     false
+      });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.rotation.x = tiltX;
+      ring.rotation.y = tiltY;
+      return ring;
+    }
+
+    const ring1 = createOrbitalRing(2.15, Math.PI / 2.3, Math.PI / 6,  0x66ffaa, 0.35);
+    const ring2 = createOrbitalRing(2.35, Math.PI / 2.6, -Math.PI / 5, 0x44dd88, 0.22);
+    const ring3 = createOrbitalRing(2.60, Math.PI / 1.9, Math.PI / 3,  0x88ffcc, 0.14);
+    scene.add(ring1, ring2, ring3);
+
+    // ─────────────────────────────────────────────
+    //  Shader 3: 光锥粒子系统
+    //
+    //  原理：
+    //    每个粒子是一个沿球面法线向外延伸的锥形光柱。
+    //    我们用一个细长的 CylinderGeometry（20 个面）表示光锥，
+    //    在顶点着色器中根据生命周期缩放长度和宽度，
+    //    在片段着色器中实现根部粗远端细的渐变和透明度衰减。
+    //
+    //    生命周期分三个阶段：
+    //      1. 延展期 (0.0 ~ 0.4)：长度线性增长
+    //      2. 峰值期 (0.4 ~ 0.7)：保持最大尺寸，亮度最高
+    //      3. 淡出期 (0.7 ~ 1.0)：长度收缩 + 透明度归零
+    // ─────────────────────────────────────────────
+
+    // 光锥几何：底面圆形 + 顶点，分段越少越省性能
+    // 用 6 边柱体（底面 6 边形），从原点延伸到 (0,1,0)
+    function makeConeGeometry(segments, height) {
+      const geo = new THREE.ConeGeometry(1.0, height, segments, 1);
+      // 将圆锥从原点开始，向上延伸
+      geo.translate(0, height / 2, 0);
+      return geo;
+    }
+
+    // 单个光锥的材质（所有粒子共享）
+    const coneVert = /* glsl */ `
+      attribute float aLife;        // 生命周期 [0,1]
+      attribute float aMaxLen;      // 最大延伸长度
+      attribute float aBaseWidth;   // 根部最大半径
+
+      uniform float uTime;
+
+      varying float vLife;
+      varying vec3  vLocalPos;
+
+      void main() {
+        vLife = aLife;
+        vLocalPos = position;
+
+        // ── 根据生命周期计算当前缩放 ──
+        float t = aLife;
+        float lenScale, widthScale, alphaScale;
+
+        if (t < 0.4) {
+          // 延展期：线性增长
+          float p = t / 0.4;
+          lenScale     = p;
+          widthScale   = p;
+          alphaScale   = p;
+        } else if (t < 0.7) {
+          // 峰值期：保持
+          lenScale     = 1.0;
+          widthScale   = 1.0;
+          alphaScale   = 1.0;
+        } else {
+          // 淡出期：收缩 + 透明
+          float p = (t - 0.7) / 0.3;
+          lenScale     = 1.0 - p * p;          // 二次方平滑收缩
+          widthScale   = 1.0 - p;
+          alphaScale   = 1.0 - p * p;
+        }
+
+        vec3 pos = position;
+        pos.y *= lenScale;                       // Y 轴拉伸/收缩长度
+        pos.xz *= widthScale;                    // XZ 轴收缩半径
+        pos *= aMaxLen;                          // 乘以最大长度
+
+        vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+        gl_Position = projectionMatrix * mvPos;
+      }
+    `;
+
+    const coneFrag = /* glsl */ `
+      uniform vec3   uColor;
+      uniform float  uTime;
+
+      varying float vLife;
+      varying vec3  vLocalPos;
+
+      void main() {
+        // ── 根部到远端的渐变：根部白亮，远端透明 ──
+        float dist = abs(vLocalPos.y);           // 0=根部  1=远端
+        float coreGlow  = 1.0 - dist * dist;     // 根部最亮
+        float tipFade   = 1.0 - dist;            // 远端渐隐
+
+        // ── 颜色：根部偏白，中段偏绿 ──
+        vec3  coreCol   = vec3(0.8, 1.0, 0.9);   // 白绿色核心
+        vec3  midCol    = uColor;                // 主色调
+        vec3  col       = mix(midCol, coreCol, coreGlow * 0.6);
+
+        // ── 整体透明度 ──
+        float alpha = tipFade * coreGlow;
+        alpha *= smoothstep(0.0, 0.05, vLife) * smoothstep(1.0, 0.85, vLife);
+
+        if (alpha < 0.01) discard;
+
+        gl_FragColor = vec4(col, alpha);
+      }
+    `;
+
+    const coneMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uColor:  { value: new THREE.Color(0x44ffaa) },
+        uTime:   { value: 0 }
+      },
+      vertexShader:   coneVert,
+      fragmentShader: coneFrag,
+      transparent:    true,
+      blending:       THREE.AdditiveBlending,
+      side:           THREE.FrontSide,
+      depthWrite:     false
+    });
+
+    // ── 光锥实例数据 ──
+    const MAX_CONES   = 80;
+    const CONE_SEGS   = 8;                        // 八面锥体，轻量
+    const CONE_HEIGHT = 0.6;
+
+    const coneGeo     = makeConeGeometry(CONE_SEGS, CONE_HEIGHT);
+    const instancedCone = new THREE.InstancedMesh(coneGeo, coneMat, MAX_CONES);
+
+    // 为每个实例添加自定义属性
+    const lifeAttr    = new Float32Array(MAX_CONES);     // 当前生命周期
+    const maxLenAttr  = new Float32Array(MAX_CONES);     // 最大延伸长度
+    const baseWidth   = new Float32Array(MAX_CONES);     // 根部宽度
+    instancedCone.geometry.setAttribute('aLife',   new THREE.InstancedBufferAttribute(lifeAttr,    1));
+    instancedCone.geometry.setAttribute('aMaxLen', new THREE.InstancedBufferAttribute(maxLenAttr, 1));
+    instancedCone.geometry.setAttribute('aBaseWidth', new THREE.InstancedBufferAttribute(baseWidth, 1));
+
+    // 每个 cone 的状态
+    const cones = [];
+    for (let i = 0; i < MAX_CONES; i++) {
+      cones.push({
+        active:   false,
+        life:     0,           // 0~1
+        maxLife:  2.0 + Math.random() * 2.5,  // 总生命周期（秒）
+        maxLen:   0.25 + Math.random() * 0.45, // 延伸长度
+        baseW:    0.02 + Math.random() * 0.04, // 根部宽度
+        // 球面随机位置（基于法线）
+        normal:   new THREE.Vector3(),
+        // 世界位置（surface hit point）
+        pos:      new THREE.Vector3()
+      });
+    }
+
+    scene.add(instancedCone);
+
+    // ── 临时矩阵 & 向量，避免每帧分配 ──
+    const _mat   = new THREE.Matrix4();
+    const _pos   = new THREE.Vector3();
+    const _quat  = new THREE.Quaternion();
+    const _scale = new THREE.Vector3();
+    const _up    = new THREE.Vector3(0, 1, 0);
+
+    // 在球面上随机生成一个点，返回法线和位置
+    function randomPointOnSphere(radius) {
+      const theta = Math.random() * Math.PI * 2;
+      const phi   = Math.acos(2 * Math.random() - 1);
+      const x = radius * Math.sin(phi) * Math.cos(theta);
+      const y = radius * Math.sin(phi) * Math.sin(theta);
+      const z = radius * Math.cos(phi);
+      const normal = new THREE.Vector3(x, y, z).normalize();
+      const pos    = normal.clone().multiplyScalar(radius);
+      return { normal, pos };
+    }
+
+    // 激活一个新光锥
+    function spawnCone() {
+      // 找空闲槽位
+      for (let i = 0; i < MAX_CONES; i++) {
+        if (!cones[i].active) {
+          const c       = cones[i];
+          const pt      = randomPointOnSphere(1.51);  // 略高于球面，避免穿模
+          c.active      = true;
+          c.life        = 0;
+          c.normal.copy(pt.normal);
+          c.pos.copy(pt.pos);
+          c.maxLen      = 0.2 + Math.random() * 0.5;
+          c.baseW       = 0.015 + Math.random() * 0.04;
+          c.maxLife     = 1.8 + Math.random() * 2.2;
+
+          // 设置实例矩阵：位置 → 球面点，旋转 → 沿法线方向，缩放 → 初始大小
+          _pos.copy(c.pos);
+          _quat.setFromUnitVectors(_up, c.normal);   // 将锥体 Y 轴对齐到法线
+          _scale.set(c.baseW, 0.001, c.baseW);       // 初始极小，让延展效果明显
+          _mat.compose(_pos, _quat, _scale);
+          instancedCone.setMatrixAt(i, _mat);
+
+          // 写入自定义属性
+          lifeAttr[i]    = 0;
+          maxLenAttr[i]  = c.maxLen;
+          baseWidth[i]   = c.baseW;
+          return;
+        }
+      }
+    }
+
+    // 初始：先批量生成一批
+    for (let i = 0; i < 20; i++) {
+      spawnCone();
+      cones[i].life = Math.random() * cones[i].maxLife;   // 错开出生时间
+    }
+
+    // ─────────────────────────────────────────────
+    //  背景星点（少量，用 Points 即可）
+    // ─────────────────────────────────────────────
+    const starCount  = 600;
+    const starPos    = new Float32Array(starCount * 3);
+    const starCol    = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const r    = 8 + Math.random() * 20;
+      const theta = Math.random() * Math.PI * 2;
+      const phi   = Math.acos(2 * Math.random() - 1);
+      starPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+      starPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+      starPos[i*3+2] = r * Math.cos(phi);
+      const g = 0.5 + Math.random() * 0.5;
+      starCol[i*3]   = 0.3 * g;
+      starCol[i*3+1] = 0.8 * g;
+      starCol[i*3+2] = 0.6 * g;
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+    starGeo.setAttribute('color',    new THREE.Float32BufferAttribute(starCol, 3));
+    const starMat = new THREE.PointsMaterial({
+      size: 0.04,
+      transparent: true,
+      opacity: 0.5,
+      vertexColors: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+    scene.add(new THREE.Points(starGeo, starMat));
+
+    // ─────────────────────────────────────────────
+    //  窗口自适应
+    // ─────────────────────────────────────────────
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      composer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // ─────────────────────────────────────────────
+    //  动画循环
+    // ─────────────────────────────────────────────
+    let lastSpawn = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const dt = Math.min(clock.getDelta(), 0.05);   // 限制最大 delta，防卡帧跳变
+      const elapsed = clock.getElapsedTime();
+
+      // ── 更新 Uniforms ──
+      sphereMat.uniforms.uTime.value = elapsed;
+      coneMat.uniforms.uTime.value   = elapsed;
+      ring1.material.uniforms.uTime.value = elapsed;
+      ring2.material.uniforms.uTime.value = elapsed;
+      ring3.material.uniforms.uTime.value = elapsed;
+
+      // ── 球体缓慢自转 ──
+      planet.rotation.y    += dt * 0.08;
+      innerSphere.rotation.y = planet.rotation.y;
+
+      // ── 光锥生命周期更新 ──
+      for (let i = 0; i < MAX_CONES; i++) {
+        const c = cones[i];
+        if (!c.active) continue;
+
+        c.life += dt;
+
+        if (c.life >= c.maxLife) {
+          // 生命周期结束，标记为非活跃
+          c.active = false;
+          lifeAttr[i] = 1.0;            // 设为 1 触发淡出逻辑
+          maxLenAttr[i] = 0;
+          // 将实例缩放到 0（隐藏）
+          _scale.set(0, 0, 0);
+          _mat.compose(c.pos, _quat.identity(), _scale);
+          instancedCone.setMatrixAt(i, _mat);
+          continue;
+        }
+
+        // 归一化生命周期 [0,1]
+        const lifeNorm = c.life / c.maxLife;
+
+        // 更新自定义属性（供着色器读取）
+        lifeAttr[i]    = lifeNorm;
+        maxLenAttr[i]  = c.maxLen;
+        baseWidth[i]   = c.baseW;
+
+        // 计算当前缩放：延展/峰值/淡出
+        let lenScale, widthScale;
+        if (lifeNorm < 0.4) {
+          const p = lifeNorm / 0.4;
+          lenScale     = p;
+          widthScale   = p;
+        } else if (lifeNorm < 0.7) {
+          lenScale     = 1.0;
+          widthScale   = 1.0;
+        } else {
+          const p = (lifeNorm - 0.7) / 0.3;
+          lenScale     = 1.0 - p * p;
+          widthScale   = 1.0 - p;
+        }
+
+        // 防止负值
+        lenScale  = Math.max(lenScale,  0.001);
+        widthScale = Math.max(widthScale, 0.001);
+
+        // 构建实例矩阵
+        _pos.copy(c.pos);
+        _quat.setFromUnitVectors(_up, c.normal);
+        _scale.set(
+          c.baseW * widthScale,
+          c.maxLen * lenScale,
+          c.baseW * widthScale
+        );
+        _mat.compose(_pos, _quat, _scale);
+        instancedCone.setMatrixAt(i, _mat);
+      }
+
+      instancedCone.instanceMatrix.needsUpdate = true;
+
+      // ── 持续随机生成新脉冲 ──
+      // 每隔一段时间 spawn 一个新光锥
+      const spawnInterval = 0.35 + Math.random() * 0.5;   // 随机间隔
+      lastSpawn += dt;
+      if (lastSpawn > spawnInterval) {
+        lastSpawn = 0;
+        spawnCone();
+      }
+
+      // ── 轨道环轻微摆动 ──
+      ring1.rotation.z = Math.sin(elapsed * 0.15) * 0.02;
+      ring2.rotation.z = Math.sin(elapsed * 0.12 + 1.0) * 0.025;
+      ring3.rotation.z = Math.sin(elapsed * 0.10 + 2.0) * 0.018;
+
+      // ── 更新控制器 & 渲染 ──
+      controls.update();
+      composer.render();
+    }
+
+    animate();
+  </script>
+</body>
+</html>

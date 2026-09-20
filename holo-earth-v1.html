@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Planet Earth — GLB Viewer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000}
+canvas{display:block}
+#info{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  color:rgba(255,255,255,0.45);font:12px/1.4 system-ui,sans-serif;pointer-events:none;
+  text-align:center;letter-spacing:0.02em}
+</style>
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://cdn.jsdelivr.net/npm/three@0.174.0/build/three.module.js",
+    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.174.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="info">drag to orbit · scroll to zoom</div>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
+
+/* ── 场景 / 相机 / 渲染器 ── */
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x020208);  // 深空蓝黑
+
+const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(0, 0.8, 4.5);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping  = true;
+controls.dampingFactor  = 0.06;
+controls.minDistance    = 2.5;
+controls.maxDistance    = 12;
+controls.target.set(0, 0, 0);
+
+/* ── 动态昼夜光照（基于真实时间）── */
+// 环境光：夜间背光面可见，避免全黑
+const ambient  = new THREE.AmbientLight(0x445577, 0.6);
+scene.add(ambient);
+
+// 太阳：方向光绕地水平旋转，强度随高度角变化
+const sun      = new THREE.DirectionalLight(0xfff8ee, 5.0);
+sun.target.position.set(0, 0, 0);   // 指向地心
+scene.add(sun, sun.target);
+
+// 补充光：模拟大气散射，黎明/黄昏时微弱照亮背光面
+const skyFill  = new THREE.HemisphereLight(0x88aadd, 0x334466, 0.45);
+scene.add(skyFill);
+
+/** 根据当前本地时间更新太阳位置与强度 */
+function updateSun(){
+  const now    = new Date();
+  const hours  = now.getHours() + now.getMinutes()/60 + now.getSeconds()/3600;
+  // 太阳角度：0h=午夜(左), 6h=日出(前), 12h=正午(右), 18h=日落(后)
+  const angle  = (hours / 24) * Math.PI * 2 - Math.PI / 2;
+  const elev   = Math.sin(angle);     // -1(午夜) ~ +1(正午)
+  const dist   = 5;
+  sun.position.set(Math.cos(angle)*dist, elev*dist, Math.sin(angle)*dist);
+  // 强度：白天强（最高5.0），黎明/黄昏减弱，午夜极低
+  sun.intensity = Math.max(0.2, elev * 3.0 + 2.0);
+}
+updateSun();
+
+/* ── 背景星点 ── */
+(function(){
+  const N = 600, pos = new Float32Array(N*3), col = new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    const r   = 20 + Math.random()*60;
+    const th  = Math.random()*Math.PI*2;
+    const phi = Math.acos(2*Math.random()-1);
+    pos[i*3]   = r*Math.sin(phi)*Math.cos(th);
+    pos[i*3+1] = r*Math.sin(phi)*Math.sin(th);
+    pos[i*3+2] = r*Math.cos(phi);
+    const b = 0.3 + Math.random()*0.5;
+    col[i*3]   = b*0.7;
+    col[i*3+1] = b*0.8;
+    col[i*3+2] = b*1.0;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('color',    new THREE.Float32BufferAttribute(col,3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({
+    size:0.06, transparent:true, opacity:0.6, vertexColors:true,
+    blending:THREE.AdditiveBlending, depthWrite:false
+  })));
+})();
+
+/* ── 加载 GLB 模型 ── */
+let earthModel = null;
+const loader = new GLTFLoader();
+loader.load('./models/planet_earth.glb', function(gltf){
+  earthModel = gltf.scene;
+
+  // 包围盒缩放：使模型直径 ≈ 3 个单位（直径 2R，R=1.5）
+  const box = new THREE.Box3().setFromObject(earthModel);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const scale = 3.0 / Math.max(size.x, size.y, size.z);
+  earthModel.scale.setScalar(scale);
+
+  earthModel.traverse(function(child){
+    if(child.isMesh){
+      // 确保所有网格使用场景灯光
+      if(child.material) child.material.needsUpdate = true;
+    }
+  });
+
+  scene.add(earthModel);
+  console.log('[GLB] loaded', gltf.scene.children.length, 'meshes');
+}, undefined, function(err){
+  console.error('[GLB] load failed:', err);
+});
+
+/* ── 缓慢自转 + 动态昼夜光照 ── */
+const clock       = new THREE.Clock();
+let   lastSunUpdate = 0;
+(function animate(){
+  requestAnimationFrame(animate);
+  const t      = clock.getElapsedTime();
+  const nowSec = Date.now() / 1000;
+  if(earthModel) earthModel.rotation.y = t * 0.08;
+  // 每秒更新一次太阳位置（基于真实时间）
+  if(nowSec - lastSunUpdate >= 1.0){ lastSunUpdate = nowSec; updateSun(); }
+  controls.update();
+  renderer.render(scene, camera);
+})();
+
+/* ── 窗口自适应 ── */
+window.addEventListener('resize', function(){
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
