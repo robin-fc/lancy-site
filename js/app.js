@@ -1,5 +1,6 @@
 import { projects } from "./projects.js";
 import { DigitalPlanet } from "./planet.js";
+import { GalleryExperience } from "./gallery.js";
 
 const app = document.querySelector("#app");
 const projectStage = document.querySelector("#project-stage");
@@ -13,10 +14,26 @@ const coordinate = document.querySelector("#project-coordinate");
 const description = document.querySelector("#project-description");
 const capabilities = document.querySelector("#capability-list");
 const clock = document.querySelector("#clock");
+const portalButton = document.querySelector("#portal-entry");
+const portalTransition = document.querySelector("#portal-transition");
+const portalStatus = document.querySelector("#portal-status");
+const portalProgressBar = document.querySelector("#portal-progress-bar");
+const portalPercent = document.querySelector("#portal-percent");
+const galleryUi = document.querySelector("#gallery-ui");
+const galleryFocus = document.querySelector("#gallery-focus");
+const galleryFocusLab = document.querySelector("#gallery-focus-lab");
+const galleryFocusTitle = document.querySelector("#gallery-focus-title");
+const galleryFocusAction = document.querySelector("#gallery-focus-action");
+const galleryError = document.querySelector("#gallery-error");
+const galleryErrorCopy = document.querySelector("#gallery-error-copy");
 const markerElements = new Map();
 const indexElements = new Map();
 let selectedProject = null;
 let planet;
+let gallery;
+let galleryReady = false;
+let portalJourneyComplete = false;
+let currentLoadProgress = 0;
 
 function updateMarkerPosition(id, position) {
   const marker = markerElements.get(id);
@@ -27,6 +44,14 @@ function updateMarkerPosition(id, position) {
   marker.style.pointerEvents = position.visibility > 0.08 ? "auto" : "none";
   marker.style.setProperty("--depth-scale", String(0.78 + Math.max(0, position.visibility) * 0.22));
   marker.style.zIndex = String(Math.round(10 + position.visibility * 10));
+}
+
+function updatePortalPosition(position) {
+  if (!portalButton) return;
+  portalButton.style.left = `${position.x}px`;
+  portalButton.style.top = `${position.y}px`;
+  portalButton.style.setProperty("--portal-depth", String(0.82 + Math.max(0, position.visibility) * 0.18));
+  portalButton.classList.toggle("is-visible", position.inView && position.visibility > 0.08 && app.dataset.state === "idle");
 }
 
 function createInterface() {
@@ -110,6 +135,106 @@ function closeProject() {
   indexElements.forEach((element) => element.classList.remove("is-selected"));
 }
 
+function updateGalleryFocus(project) {
+  const hasProject = Boolean(project);
+  galleryFocus.classList.toggle("is-project", hasProject);
+  galleryFocusLab.textContent = hasProject ? `LAB ${project.lab} / ${project.short}` : "探索空间";
+  galleryFocusTitle.textContent = hasProject ? project.title : "靠近墙面作品并点击查看";
+  galleryFocusAction.textContent = hasProject ? "点击或按 E 打开作品" : "WASD 移动 · 鼠标环视 · Shift 慢跑";
+}
+
+function updateGalleryProgress(progress) {
+  currentLoadProgress = Math.max(currentLoadProgress, progress);
+  const percent = Math.round(currentLoadProgress * 100);
+  portalProgressBar.style.width = `${percent}%`;
+  portalPercent.textContent = `${String(percent).padStart(2, "0")}%`;
+  if (percent < 14) portalStatus.textContent = "建立空间连接";
+  else if (percent < 72) portalStatus.textContent = "载入艺术空间";
+  else if (percent < 94) portalStatus.textContent = "唤醒空间角色";
+  else portalStatus.textContent = "准备漫游";
+}
+
+function createGallery() {
+  if (gallery) return gallery;
+  gallery = new GalleryExperience({
+    renderer: planet.renderer,
+    projects,
+    onFocusProject: updateGalleryFocus,
+    onExit: returnToPlanet,
+    mobileStick: document.querySelector("#mobile-stick"),
+    mobileKnob: document.querySelector("#mobile-stick-knob"),
+    mobileRunButton: document.querySelector("#mobile-run")
+  });
+  return gallery;
+}
+
+async function ensureGalleryLoaded() {
+  if (galleryReady) return gallery;
+  const experience = createGallery();
+  await experience.load(updateGalleryProgress);
+  galleryReady = true;
+  revealGalleryWhenReady();
+  return experience;
+}
+
+function revealGalleryWhenReady() {
+  if (!galleryReady || !portalJourneyComplete) return;
+  portalStatus.textContent = "空间已就绪";
+  portalProgressBar.style.width = "100%";
+  portalPercent.textContent = "100%";
+  window.setTimeout(() => {
+    planet.setActive(false);
+    gallery.activate();
+    app.dataset.state = "gallery";
+    galleryUi.setAttribute("aria-hidden", "false");
+    portalTransition.setAttribute("aria-hidden", "true");
+  }, 260);
+}
+
+function showGalleryError(error) {
+  console.error("Unable to initialize the gallery.", error);
+  app.dataset.state = "gallery-error";
+  planet.setActive(false);
+  gallery?.deactivate();
+  galleryError.hidden = false;
+  galleryErrorCopy.textContent = "模型暂时无法载入，请检查网络连接后重试。";
+}
+
+function enterGallery() {
+  if (!["idle", "active"].includes(app.dataset.state)) return;
+  if (selectedProject) closeProject();
+  currentLoadProgress = 0;
+  portalJourneyComplete = false;
+  galleryError.hidden = true;
+  updateGalleryProgress(galleryReady ? 1 : 0.01);
+  app.dataset.state = "portal";
+  portalTransition.setAttribute("aria-hidden", "false");
+  portalButton.classList.remove("is-visible");
+
+  ensureGalleryLoaded().catch(showGalleryError);
+  planet.enterPortal(() => {
+    portalJourneyComplete = true;
+    if (!galleryReady) app.dataset.state = "gallery-loading";
+    revealGalleryWhenReady();
+  });
+}
+
+function returnToPlanet() {
+  if (!gallery) return;
+  gallery.deactivate();
+  galleryUi.setAttribute("aria-hidden", "true");
+  galleryError.hidden = true;
+  app.dataset.state = "portal";
+  portalTransition.setAttribute("aria-hidden", "false");
+  planet.renderer.setClearColor(0x000000, 0);
+  planet.renderer.toneMappingExposure = 1.15;
+  planet.resetPortal();
+  window.setTimeout(() => {
+    app.dataset.state = "idle";
+    portalTransition.setAttribute("aria-hidden", "true");
+  }, 720);
+}
+
 function updateClock() {
   const formatter = new Intl.DateTimeFormat("zh-CN", {
     timeZone: "Asia/Shanghai",
@@ -136,7 +261,7 @@ function initialize() {
   window.setInterval(updateClock, 1000);
 
   try {
-    planet = new DigitalPlanet(document.querySelector("#scene"), projects, updateMarkerPosition);
+    planet = new DigitalPlanet(document.querySelector("#scene"), projects, updateMarkerPosition, updatePortalPosition);
     planet.initialize();
     window.setTimeout(() => app.classList.add("is-ready"), 650);
   } catch (error) {
@@ -144,6 +269,21 @@ function initialize() {
   }
 
   document.querySelector("#close-project").addEventListener("click", closeProject);
+  portalButton.addEventListener("click", enterGallery);
+  portalButton.addEventListener("mouseenter", () => {
+    planet?.setPointerPaused(true);
+    createGallery();
+  });
+  portalButton.addEventListener("mouseleave", () => planet?.setPointerPaused(false));
+  portalButton.addEventListener("focus", () => createGallery());
+  document.querySelector("#gallery-back").addEventListener("click", returnToPlanet);
+  document.querySelector("#gallery-error-back").addEventListener("click", returnToPlanet);
+  document.querySelector("#gallery-retry").addEventListener("click", () => {
+    galleryError.hidden = true;
+    app.dataset.state = "gallery-loading";
+    currentLoadProgress = 0;
+    ensureGalleryLoaded().catch(showGalleryError);
+  });
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && selectedProject) {
       closeProject();

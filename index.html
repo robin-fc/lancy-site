@@ -27,6 +27,14 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='%2354edf5' stroke-width='5'/%3E%3Ccircle cx='50' cy='50' r='11' fill='%23ffa65a'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
 
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js"
+    }
+  }
+  </script>
+
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -79,11 +87,19 @@
         <p class="intro-author">Lancy，独立开发者与 AI 实践者。这里收集关于内容创作、投资研究、视觉生成与个人效率的实验，每一处坐标都是一个持续生长的作品。</p>
         <div class="intro-command">
           <span class="command-dot"></span>
-          <span>选择星球上的实验坐标</span>
+          <span>拖拽旋转 · 滚轮或 +/- 缩放 · 选择实验坐标</span>
         </div>
       </section>
 
       <div class="markers" id="markers" aria-label="星球实验地点"></div>
+
+      <button class="portal-entry" id="portal-entry" type="button" aria-label="从上海进入兰心 AI 艺廊">
+        <span class="portal-entry-pulse" aria-hidden="true"></span>
+        <span class="portal-entry-copy">
+          <b>SHANGHAI</b>
+          <small>ENTER THE ARCHIVE</small>
+        </span>
+      </button>
 
       <section class="project-stage" id="project-stage" aria-live="polite" aria-hidden="true">
         <button class="close-project" id="close-project" type="button" aria-label="关闭项目预览">
@@ -128,6 +144,51 @@
     <div class="loader" id="loader" role="status" aria-label="正在加载数字星球">
       <div class="loader-orbit"><span></span></div>
       <span class="loader-label">INITIALIZING PLANET</span>
+    </div>
+
+    <section class="portal-transition" id="portal-transition" aria-live="polite" aria-hidden="true">
+      <div class="portal-flare" aria-hidden="true"></div>
+      <div class="portal-progress-wrap">
+        <span class="portal-kicker">SHANGHAI / 31.2304° N · 121.4737° E</span>
+        <strong id="portal-status">定位上海坐标</strong>
+        <div class="portal-progress" aria-hidden="true"><span id="portal-progress-bar"></span></div>
+        <span class="portal-percent" id="portal-percent">00%</span>
+      </div>
+    </section>
+
+    <section class="gallery-ui" id="gallery-ui" aria-hidden="true">
+      <div class="gallery-title">
+        <span>LANCY / PRIVATE ARCHIVE</span>
+        <strong>AI 作品艺廊</strong>
+      </div>
+      <button class="gallery-back" id="gallery-back" type="button">
+        <span aria-hidden="true">←</span> 返回星球
+      </button>
+      <div class="gallery-reticle" aria-hidden="true"><span></span></div>
+      <div class="gallery-focus" id="gallery-focus" aria-live="polite">
+        <span id="gallery-focus-lab">探索空间</span>
+        <strong id="gallery-focus-title">靠近墙面作品并点击查看</strong>
+        <small id="gallery-focus-action">WASD 移动 · 拖拽环视 · 滚轮或 +/- 缩放</small>
+      </div>
+      <div class="gallery-controls" aria-label="艺廊操作提示">
+        <div class="key-grid" aria-hidden="true">
+          <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+        </div>
+        <p><b>移动</b><span>拖拽环视 · 滚轮或 +/- 缩放 · Shift 慢跑 · E 打开展品</span></p>
+      </div>
+      <div class="mobile-stick" id="mobile-stick" aria-label="移动摇杆">
+        <span id="mobile-stick-knob"></span>
+      </div>
+      <button class="mobile-run" id="mobile-run" type="button" aria-pressed="false">RUN</button>
+    </section>
+
+    <div class="gallery-error" id="gallery-error" role="alert" hidden>
+      <strong>空间连接失败</strong>
+      <p id="gallery-error-copy">模型暂时无法载入，请检查网络后重试。</p>
+      <div>
+        <button id="gallery-retry" type="button">重新载入</button>
+        <button id="gallery-error-back" type="button">返回星球</button>
+      </div>
     </div>
   </div>
 
