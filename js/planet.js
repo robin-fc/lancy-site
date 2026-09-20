@@ -47,6 +47,11 @@ export class DigitalPlanet {
     this.portalCallback = null;
     this.basePlanetScale = 1;
     this.lastTime = performance.now();
+    this.viewportWidth = window.innerWidth;
+    this.viewportHeight = window.innerHeight;
+    this.markerWorld = new THREE.Vector3();
+    this.markerProjected = new THREE.Vector3();
+    this.markerViewDirection = new THREE.Vector3();
     this.animate = this.animate.bind(this);
     this.resize = this.resize.bind(this);
     this.handlePlanetPointerDown = this.handlePlanetPointerDown.bind(this);
@@ -59,7 +64,11 @@ export class DigitalPlanet {
   initialize() {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(39, window.innerWidth / window.innerHeight, 0.1, 60);
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: window.devicePixelRatio <= 1.5,
+      alpha: true,
+      powerPreference: "high-performance"
+    });
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -277,14 +286,17 @@ export class DigitalPlanet {
   createShanghaiPortal() {
     const surfaceNormal = sphericalPosition(SHANGHAI.lat, SHANGHAI.lon, 1).normalize();
     const surfacePoint = surfaceNormal.clone().multiplyScalar(1.515);
-    const height = 0.84;
+    const height = 0.3;
     this.portalAnchor = surfaceNormal.clone().multiplyScalar(2.08);
     this.portalGroup = new THREE.Group();
     this.portalGroup.position.copy(surfacePoint.clone().addScaledVector(surfaceNormal, height * 0.5));
     this.portalGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), surfaceNormal);
 
+    // Keep the portal beam close to a column. A wide cone reads as a searchlight
+    // once it is projected against the globe, while the reference uses a narrow
+    // shaft that only opens up slightly where it meets the surface.
     const cone = new THREE.Mesh(
-      new THREE.ConeGeometry(0.18, height, 48, 1, true),
+      new THREE.CylinderGeometry(0.012, 0.03, height, 32, 1, true),
       new THREE.ShaderMaterial({
         uniforms: {
           time: { value: 0 },
@@ -308,10 +320,10 @@ export class DigitalPlanet {
           varying float vHeight;
           varying vec3 vWorldPosition;
           void main() {
-            float shimmer = 0.82 + sin(time * 2.4 + vWorldPosition.y * 12.0) * 0.18;
-            float edgeFade = smoothstep(1.0, 0.05, vHeight);
-            vec3 color = mix(silverA, silverB, vHeight * 0.72) * shimmer;
-            float alpha = mix(0.78, 0.08, vHeight) * (0.72 + edgeFade * 0.28);
+            float shimmer = 0.9 + sin(time * 2.4 + vWorldPosition.y * 12.0) * 0.1;
+            float endFade = smoothstep(0.0, 0.16, vHeight);
+            vec3 color = mix(silverB, silverA, vHeight * 0.82) * shimmer;
+            float alpha = mix(0.08, 0.38, vHeight) * endFade;
             gl_FragColor = vec4(color, alpha);
           }
         `,
@@ -324,17 +336,45 @@ export class DigitalPlanet {
     this.portalCone = cone;
     this.portalGroup.add(cone);
 
+    const beamGlow = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.022, 0.052, height * 1.01, 32, 1, true),
+      new THREE.MeshBasicMaterial({
+        color: 0x7bddea,
+        transparent: true,
+        opacity: 0.065,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    this.portalGroup.add(beamGlow);
+
     const beamCore = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.012, 0.035, height * 1.05, 16, 1, true),
+      new THREE.CylinderGeometry(0.004, 0.009, height * 1.04, 16, 1, true),
       new THREE.MeshBasicMaterial({
         color: 0xf8fbff,
         transparent: true,
-        opacity: 0.72,
+        opacity: 0.76,
         depthWrite: false,
         blending: THREE.AdditiveBlending
       })
     );
     this.portalGroup.add(beamCore);
+
+    const spot = new THREE.Mesh(
+      new THREE.CircleGeometry(0.036, 48),
+      new THREE.MeshBasicMaterial({
+        color: 0xf7fbff,
+        transparent: true,
+        opacity: 0.56,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    spot.position.copy(surfacePoint.clone().addScaledVector(surfaceNormal, 0.014));
+    spot.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), surfaceNormal);
+    this.planetGroup.add(spot);
 
     const ringMaterial = new THREE.MeshBasicMaterial({
       color: 0xe8effa,
@@ -345,8 +385,10 @@ export class DigitalPlanet {
       blending: THREE.AdditiveBlending
     });
     this.portalRings = [];
-    [0.16, 0.25].forEach((radius, index) => {
-      const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 0.82, radius, 48), ringMaterial.clone());
+    [0.052, 0.066].forEach((radius, index) => {
+      const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 0.84, radius, 48), ringMaterial.clone());
+      ring.material.color.setHex(index === 0 ? 0x8df5ff : 0xffb45f);
+      ring.material.opacity = index === 0 ? 0.82 : 0.34;
       ring.position.copy(surfacePoint.clone().addScaledVector(surfaceNormal, 0.012 + index * 0.008));
       ring.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), surfaceNormal);
       ring.userData.phase = index * Math.PI;
@@ -449,6 +491,7 @@ export class DigitalPlanet {
     this.planetGroup.rotation.set(0, this.targetRotation, 0);
     this.targetRotationX = 0;
     this.host.style.opacity = "1";
+    this.renderer.toneMappingExposure = 1.15;
     this.setActive(true);
   }
 
@@ -459,8 +502,8 @@ export class DigitalPlanet {
       const progress = easeInOutCubic(this.portalProgress);
       const mobile = window.innerWidth <= 900;
       const startRadius = (mobile ? 6.5 : 5.55) * this.cameraZoom;
-      const radius = THREE.MathUtils.lerp(startRadius, mobile ? 2.2 : 2.0, progress);
-      const orbitAngle = Math.sin(progress * Math.PI) * THREE.MathUtils.degToRad(mobile ? 9 : 24);
+      const radius = THREE.MathUtils.lerp(startRadius, mobile ? 2.65 : 2.4, progress);
+      const orbitAngle = Math.sin(progress * Math.PI) * THREE.MathUtils.degToRad(mobile ? 7 : 18);
       this.camera.position.set(Math.sin(orbitAngle) * radius, THREE.MathUtils.lerp(mobile ? 0.72 : 0.05, 0.15, progress), Math.cos(orbitAngle) * radius);
       this.camera.lookAt(0, 0, 0);
       return;
@@ -477,12 +520,13 @@ export class DigitalPlanet {
 
   updateMarkers() {
     this.planetGroup.updateMatrixWorld(true);
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const width = this.viewportWidth;
+    const height = this.viewportHeight;
     this.projects.forEach((project) => {
-      const world = this.markerPositions.get(project.id).clone().applyMatrix4(this.planetGroup.matrixWorld);
-      const visibility = world.clone().normalize().dot(this.camera.position.clone().sub(world).normalize());
-      const projected = world.clone().project(this.camera);
+      const world = this.markerWorld.copy(this.markerPositions.get(project.id)).applyMatrix4(this.planetGroup.matrixWorld);
+      const visibility = this.markerViewDirection.copy(this.camera.position).sub(world).normalize()
+        .dot(this.markerProjected.copy(world).normalize());
+      const projected = this.markerProjected.copy(world).project(this.camera);
       this.onMarkerPosition(project.id, {
         x: (projected.x * 0.5 + 0.5) * width,
         y: (-projected.y * 0.5 + 0.5) * height,
@@ -491,9 +535,10 @@ export class DigitalPlanet {
       });
     });
     if (this.portalAnchor && this.onPortalPosition) {
-      const world = this.portalAnchor.clone().applyMatrix4(this.planetGroup.matrixWorld);
-      const visibility = world.clone().normalize().dot(this.camera.position.clone().sub(world).normalize());
-      const projected = world.clone().project(this.camera);
+      const world = this.markerWorld.copy(this.portalAnchor).applyMatrix4(this.planetGroup.matrixWorld);
+      const visibility = this.markerViewDirection.copy(this.camera.position).sub(world).normalize()
+        .dot(this.markerProjected.copy(world).normalize());
+      const projected = this.markerProjected.copy(world).project(this.camera);
       this.onPortalPosition({
         x: (projected.x * 0.5 + 0.5) * width,
         y: (-projected.y * 0.5 + 0.5) * height,
@@ -507,10 +552,12 @@ export class DigitalPlanet {
     if (!this.renderer || !this.camera) return;
     const width = window.innerWidth;
     const height = window.innerHeight;
+    this.viewportWidth = width;
+    this.viewportHeight = height;
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, width < 700 ? 1.35 : 1.8));
-    this.renderer.setSize(width, height);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, width < 700 ? 1.2 : 1.5));
+    this.renderer.setSize(width, height, false);
     if (this.planetGroup) {
       const mobile = width <= 900;
       this.basePlanetScale = mobile ? 0.78 : 1;
@@ -522,13 +569,21 @@ export class DigitalPlanet {
   animate(time) {
     const delta = Math.min(0.05, (time - this.lastTime) / 1000);
     this.lastTime = time;
+    if (!this.active || document.hidden) {
+      window.requestAnimationFrame(this.animate);
+      return;
+    }
     this.elapsed += delta;
     if (this.portalMode) {
       const duration = this.reducedMotion ? 0.7 : 3.35;
       this.portalProgress = Math.min(1, (this.elapsed - this.portalStart) / duration);
       const eased = easeInOutCubic(this.portalProgress);
       this.planetGroup.quaternion.slerpQuaternions(this.portalStartQuaternion, this.portalTargetQuaternion, eased);
-      this.planetGroup.scale.setScalar(this.basePlanetScale * THREE.MathUtils.lerp(1, 2.85, eased));
+      // Keep the approach readable instead of letting the planet blow out into a
+      // full-screen white cut. The final exposure also matches the gallery so
+      // both scenes share the same dark, cool-toned visual range.
+      this.planetGroup.scale.setScalar(this.basePlanetScale * THREE.MathUtils.lerp(1, 2.35, eased));
+      this.renderer.toneMappingExposure = THREE.MathUtils.lerp(1.15, 0.92, eased);
       if (this.portalProgress >= 1 && this.portalCallback) {
         const callback = this.portalCallback;
         this.portalCallback = null;
@@ -559,7 +614,7 @@ export class DigitalPlanet {
     }
     this.updateCamera(delta);
     this.updateMarkers();
-    if (this.active) this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.camera);
     window.requestAnimationFrame(this.animate);
   }
 }

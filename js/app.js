@@ -1,6 +1,5 @@
 import { projects } from "./projects.js";
 import { DigitalPlanet } from "./planet.js";
-import { GalleryExperience } from "./gallery.js";
 
 const app = document.querySelector("#app");
 const projectStage = document.querySelector("#project-stage");
@@ -31,15 +30,17 @@ const indexElements = new Map();
 let selectedProject = null;
 let planet;
 let gallery;
+let galleryCreationPromise;
 let galleryReady = false;
 let portalJourneyComplete = false;
 let currentLoadProgress = 0;
+let galleryRevealPending = false;
 
 function updateMarkerPosition(id, position) {
   const marker = markerElements.get(id);
   if (!marker) return;
-  marker.style.left = `${position.x}px`;
-  marker.style.top = `${position.y}px`;
+  marker.style.setProperty("--marker-x", `${position.x.toFixed(1)}px`);
+  marker.style.setProperty("--marker-y", `${position.y.toFixed(1)}px`);
   marker.style.opacity = position.inView ? String(Math.min(1, 0.2 + position.visibility * 1.2)) : "0";
   marker.style.pointerEvents = position.visibility > 0.08 ? "auto" : "none";
   marker.style.setProperty("--depth-scale", String(0.78 + Math.max(0, position.visibility) * 0.22));
@@ -48,8 +49,8 @@ function updateMarkerPosition(id, position) {
 
 function updatePortalPosition(position) {
   if (!portalButton) return;
-  portalButton.style.left = `${position.x}px`;
-  portalButton.style.top = `${position.y}px`;
+  portalButton.style.setProperty("--portal-x", `${position.x.toFixed(1)}px`);
+  portalButton.style.setProperty("--portal-y", `${position.y.toFixed(1)}px`);
   portalButton.style.setProperty("--portal-depth", String(0.82 + Math.max(0, position.visibility) * 0.18));
   portalButton.classList.toggle("is-visible", position.inView && position.visibility > 0.08 && app.dataset.state === "idle");
 }
@@ -154,23 +155,31 @@ function updateGalleryProgress(progress) {
   else portalStatus.textContent = "准备漫游";
 }
 
-function createGallery() {
+async function createGallery() {
   if (gallery) return gallery;
-  gallery = new GalleryExperience({
-    renderer: planet.renderer,
-    projects,
-    onFocusProject: updateGalleryFocus,
-    onExit: returnToPlanet,
-    mobileStick: document.querySelector("#mobile-stick"),
-    mobileKnob: document.querySelector("#mobile-stick-knob"),
-    mobileRunButton: document.querySelector("#mobile-run")
-  });
-  return gallery;
+  if (!galleryCreationPromise) {
+    galleryCreationPromise = import("./gallery.js").then(({ GalleryExperience }) => {
+      gallery = new GalleryExperience({
+        renderer: planet.renderer,
+        projects,
+        onFocusProject: updateGalleryFocus,
+        onExit: returnToPlanet,
+        mobileStick: document.querySelector("#mobile-stick"),
+        mobileKnob: document.querySelector("#mobile-stick-knob"),
+        mobileRunButton: document.querySelector("#mobile-run")
+      });
+      return gallery;
+    }).catch((error) => {
+      galleryCreationPromise = null;
+      throw error;
+    });
+  }
+  return galleryCreationPromise;
 }
 
 async function ensureGalleryLoaded() {
   if (galleryReady) return gallery;
-  const experience = createGallery();
+  const experience = await createGallery();
   await experience.load(updateGalleryProgress);
   galleryReady = true;
   revealGalleryWhenReady();
@@ -178,17 +187,26 @@ async function ensureGalleryLoaded() {
 }
 
 function revealGalleryWhenReady() {
-  if (!galleryReady || !portalJourneyComplete) return;
+  if (!galleryReady || !portalJourneyComplete || galleryRevealPending) return;
+  galleryRevealPending = true;
   portalStatus.textContent = "空间已就绪";
   portalProgressBar.style.width = "100%";
   portalPercent.textContent = "100%";
+  app.dataset.state = "portal-blackout";
+
+  // Finish the planet shot in a true black frame, switch renderers while the
+  // frame is covered, then reveal the gallery from black.
   window.setTimeout(() => {
     planet.setActive(false);
     gallery.activate();
-    app.dataset.state = "gallery";
+    app.dataset.state = "gallery-reveal";
     galleryUi.setAttribute("aria-hidden", "false");
-    portalTransition.setAttribute("aria-hidden", "true");
-  }, 260);
+    window.setTimeout(() => {
+      app.dataset.state = "gallery";
+      portalTransition.setAttribute("aria-hidden", "true");
+      galleryRevealPending = false;
+    }, 100);
+  }, 420);
 }
 
 function showGalleryError(error) {
@@ -205,6 +223,7 @@ function enterGallery() {
   if (selectedProject) closeProject();
   currentLoadProgress = 0;
   portalJourneyComplete = false;
+  galleryRevealPending = false;
   galleryError.hidden = true;
   updateGalleryProgress(galleryReady ? 1 : 0.01);
   app.dataset.state = "portal";
@@ -272,10 +291,13 @@ function initialize() {
   portalButton.addEventListener("click", enterGallery);
   portalButton.addEventListener("mouseenter", () => {
     planet?.setPointerPaused(true);
-    createGallery();
+    createGallery().catch((error) => console.warn("Unable to preload the gallery.", error));
   });
   portalButton.addEventListener("mouseleave", () => planet?.setPointerPaused(false));
-  portalButton.addEventListener("focus", () => createGallery());
+  portalButton.addEventListener("focus", () => {
+    createGallery().catch((error) => console.warn("Unable to preload the gallery.", error));
+  });
+  document.querySelector("#gallery-switch").addEventListener("click", () => gallery?.switchScene());
   document.querySelector("#gallery-back").addEventListener("click", returnToPlanet);
   document.querySelector("#gallery-error-back").addEventListener("click", returnToPlanet);
   document.querySelector("#gallery-retry").addEventListener("click", () => {

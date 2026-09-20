@@ -163,6 +163,22 @@ a:focus-visible {
   display: block;
 }
 
+.scene {
+  opacity: 1;
+  transition: opacity 1.05s var(--ease-orbit);
+}
+
+.app[data-state="portal-blackout"],
+.app[data-state="gallery-reveal"] {
+  background: #000;
+}
+
+.app[data-state="portal-blackout"] .scene,
+.app[data-state="gallery-reveal"] .scene {
+  opacity: 0;
+  transition-duration: 0.42s;
+}
+
 .grid-plane {
   position: absolute;
   z-index: 0;
@@ -310,8 +326,13 @@ a:focus-visible {
   background: rgba(3, 17, 25, 0.68);
   cursor: pointer;
   pointer-events: auto;
-  transform: translate(-50%, -50%) scale(var(--depth-scale, 1));
+  transform: translate3d(
+    calc(var(--marker-x, 0px) - 50%),
+    calc(var(--marker-y, 0px) - 50%),
+    0
+  ) scale(var(--depth-scale, 1));
   transition: opacity 0.3s ease, filter 0.3s ease;
+  will-change: transform, opacity;
 }
 
 .marker-ring,
@@ -924,8 +945,13 @@ a:focus-visible {
   background: transparent;
   cursor: pointer;
   pointer-events: none;
-  transform: translate(-50%, -50%) scale(var(--portal-depth, 1));
+  transform: translate3d(
+    calc(var(--portal-x, 0px) - 50%),
+    calc(var(--portal-y, 0px) - 50%),
+    0
+  ) scale(var(--portal-depth, 1));
   transition: opacity 0.3s ease, filter 0.3s ease;
+  will-change: transform, opacity;
 }
 
 .portal-entry.is-visible { opacity: 1; pointer-events: auto; }
@@ -972,6 +998,7 @@ a:focus-visible {
 
 .app[data-state="portal"] .portal-entry,
 .app[data-state="gallery-loading"] .portal-entry,
+.app[data-state="portal-blackout"] .portal-entry,
 .app[data-state="gallery"] .portal-entry,
 .app[data-state="gallery-error"] .portal-entry { opacity: 0; pointer-events: none; }
 
@@ -981,6 +1008,12 @@ a:focus-visible {
 .app[data-state="portal"] .planet-meta,
 .app[data-state="portal"] .topbar,
 .app[data-state="portal"] .footerbar,
+.app[data-state="portal-blackout"] .intro-panel,
+.app[data-state="portal-blackout"] .markers,
+.app[data-state="portal-blackout"] .lab-index,
+.app[data-state="portal-blackout"] .planet-meta,
+.app[data-state="portal-blackout"] .topbar,
+.app[data-state="portal-blackout"] .footerbar,
 .app[data-state^="gallery"] .intro-panel,
 .app[data-state^="gallery"] .markers,
 .app[data-state^="gallery"] .lab-index,
@@ -1004,32 +1037,92 @@ a:focus-visible {
   overflow: hidden;
   opacity: 0;
   pointer-events: none;
-  background: rgba(2, 8, 13, 0);
-  transition: opacity 0.5s ease, visibility 0.5s, background 1.1s ease;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(70, 177, 190, 0), rgba(2, 8, 13, 0) 54%),
+    rgba(2, 8, 13, 0);
+  transition: opacity 0.5s ease, visibility 0.5s, background 3s ease-in;
 }
 
 .app[data-state="portal"] .portal-transition,
-.app[data-state="gallery-loading"] .portal-transition { visibility: visible; opacity: 1; }
-.app[data-state="gallery-loading"] .portal-transition { background: #02070a; }
+.app[data-state="gallery-loading"] .portal-transition,
+.app[data-state="portal-blackout"] .portal-transition,
+.app[data-state="gallery-reveal"] .portal-transition { visibility: visible; opacity: 1; }
+.app[data-state="portal"] .portal-transition {
+  background: rgba(0, 0, 0, 0.42);
+}
+.app[data-state="gallery-loading"] .portal-transition {
+  background:
+    radial-gradient(circle at 50% 46%, rgba(21, 70, 78, 0.1), transparent 38%),
+    #010609;
+}
+.app[data-state="portal-blackout"] .portal-transition,
+.app[data-state="gallery-reveal"] .portal-transition {
+  background: #000;
+  transition: background 0.42s ease;
+}
+
+.app[data-state="gallery"] .portal-transition {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 1.05s var(--ease-orbit), visibility 0s 1.05s;
+}
 
 .portal-flare {
   position: absolute;
-  width: 12vmin;
-  height: 12vmin;
+  width: 20vmin;
+  height: 20vmin;
   border-radius: 50%;
   opacity: 0;
-  background: #f6f9ff;
-  box-shadow: 0 0 12vmin 5vmin rgba(225, 235, 250, 0.8), 0 0 40vmin 22vmin rgba(163, 181, 201, 0.35);
-  transform: scale(0.25);
+  background: radial-gradient(circle,
+    #000 0 32%,
+    rgba(0, 0, 0, 0.98) 48%,
+    rgba(0, 0, 0, 0.8) 63%,
+    rgba(0, 0, 0, 0) 78%);
+  box-shadow:
+    inset 0 0 7vmin rgba(0, 0, 0, 0.42),
+    0 0 28vmin 16vmin rgba(0, 0, 0, 0.68);
+  transform: scale(0.22);
+  will-change: transform, opacity;
+}
+
+.portal-flare::before,
+.portal-flare::after {
+  position: absolute;
+  border: 1px solid rgba(122, 143, 148, 0.07);
+  border-radius: 50%;
+  content: "";
+}
+
+.portal-flare::before {
+  inset: -24%;
+  box-shadow: 0 0 4vmin rgba(0, 0, 0, 0.24);
+}
+
+.portal-flare::after {
+  inset: -68%;
+  border-color: rgba(122, 143, 148, 0.035);
 }
 
 .app[data-state="portal"] .portal-flare {
   opacity: 1;
-  transform: scale(18);
-  transition: opacity 0.9s 1.8s ease, transform 2.1s 1s cubic-bezier(0.19, 0.82, 0.25, 1);
+  transform: scale(10);
+  transition:
+    opacity 0.8s 0.75s ease-in,
+    transform 2.45s 0.65s cubic-bezier(0.18, 0.72, 0.22, 1);
 }
 
-.app[data-state="gallery-loading"] .portal-flare { opacity: 0.06; transform: scale(16); }
+.app[data-state="gallery-loading"] .portal-flare {
+  opacity: 0.28;
+  transform: scale(11);
+  transition: opacity 0.7s ease, transform 0.9s ease-out;
+}
+
+.app[data-state="portal-blackout"] .portal-flare,
+.app[data-state="gallery-reveal"] .portal-flare {
+  opacity: 0;
+  transform: scale(11.5);
+  transition: opacity 0.32s ease-out, transform 0.42s ease-out;
+}
 
 .portal-progress-wrap {
   position: relative;
@@ -1038,10 +1131,10 @@ a:focus-visible {
   width: min(420px, calc(100vw - 48px));
   padding: 28px 30px;
   flex-direction: column;
-  border: 1px solid rgba(216, 229, 245, 0.24);
+  border: 1px solid rgba(116, 239, 244, 0.2);
   opacity: 0;
-  background: rgba(3, 12, 18, 0.76);
-  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42), inset 0 0 38px rgba(190, 214, 235, 0.04);
+  background: rgba(4, 18, 25, 0.78);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42), inset 0 0 38px rgba(89, 237, 245, 0.045);
   backdrop-filter: blur(18px);
   transform: translateY(16px);
   transition: opacity 0.45s ease, transform 0.6s var(--ease-orbit);
@@ -1051,7 +1144,7 @@ a:focus-visible {
 .portal-kicker { color: #8799aa; font-size: 11px; letter-spacing: 0.16em; }
 .portal-progress-wrap strong { margin-top: 18px; color: #edf5ff; font-size: 20px; font-weight: 300; letter-spacing: 0.12em; }
 .portal-progress { height: 2px; margin-top: 26px; overflow: hidden; background: rgba(221, 233, 248, 0.13); }
-.portal-progress span { display: block; width: 0; height: 100%; background: linear-gradient(90deg, #7e8c9e, #f6f9ff); box-shadow: 0 0 12px rgba(238, 245, 255, 0.85); transition: width 0.25s ease; }
+.portal-progress span { display: block; width: 0; height: 100%; background: linear-gradient(90deg, #3fa5b1, var(--cyan)); box-shadow: 0 0 12px rgba(89, 237, 245, 0.62); transition: width 0.25s ease; }
 .portal-percent { margin-top: 10px; align-self: flex-end; color: #aab8c8; font-size: 12px; letter-spacing: 0.18em; }
 
 .gallery-ui {
@@ -1064,8 +1157,72 @@ a:focus-visible {
   transition: opacity 0.8s ease, visibility 0.8s;
 }
 
-.app[data-state="gallery"] .gallery-ui { visibility: visible; opacity: 1; }
-.gallery-title { position: absolute; top: 28px; left: 34px; display: flex; flex-direction: column; gap: 7px; text-shadow: 0 2px 12px #000; }
+.app[data-state="gallery-reveal"] .gallery-ui,
+.app[data-state="gallery"] .gallery-ui { visibility: visible; }
+.app[data-state="gallery"] .gallery-ui { opacity: 1; }
+.gallery-switch {
+  position: absolute;
+  top: 74px;
+  left: 252px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(220, 232, 245, 0.3);
+  background: rgba(5, 12, 17, 0.64);
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(12px);
+}
+.gallery-switch img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.gallery-switch:hover { border-color: rgba(255, 255, 255, 0.75); }
+
+.gallery-greeting {
+  position: absolute;
+  left: 50%;
+  top: 56px;
+  transform: translateX(-50%) translateY(-50%);
+  max-width: 420px;
+  width: calc(100% - 48px);
+  padding: 14px 24px;
+  background: linear-gradient(135deg, rgba(4, 20, 30, 0.9) 0%, rgba(8, 32, 48, 0.85) 100%);
+  border: 1px solid rgba(89, 237, 245, 0.35);
+  border-top: 1px solid rgba(89, 237, 245, 0.6);
+  border-radius: 10px;
+  backdrop-filter: blur(14px);
+  color: var(--ink);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  box-shadow: 0 0 20px rgba(89, 237, 245, 0.12), inset 0 1px 0 rgba(89, 237, 245, 0.15);
+}
+.gallery-greeting.is-visible {
+  opacity: 1;
+}
+
+.gallery-title { position: absolute; top: 76px; left: 34px; display: flex; flex-direction: column; gap: 7px; text-shadow: 0 2px 12px #000; }
+.gallery-coords {
+  position: absolute;
+  bottom: 28px;
+  right: 34px;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: rgba(201, 215, 230, 0.55);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  user-select: none;
+}
 .gallery-title span { color: rgba(212, 225, 238, 0.62); font-size: 11px; letter-spacing: 0.22em; }
 .gallery-title strong { color: #f0f7ff; font-size: 20px; font-weight: 300; letter-spacing: 0.16em; }
 
@@ -1160,6 +1317,9 @@ a:focus-visible {
   .gallery-title { top: 20px; left: 20px; }
   .gallery-title span { display: none; }
   .gallery-title strong { font-size: 15px; }
+  .gallery-greeting { top: 30px; max-width: 280px; font-size: 12px; padding: 8px 12px; }
+  .gallery-switch { top: 14px; left: 110px; width: 38px; height: 38px; }
+  .gallery-switch img { width: 18px; height: 18px; }
   .gallery-back { top: 16px; right: 16px; min-height: 40px; }
   .gallery-controls { display: none; }
   .gallery-focus { bottom: 22px; min-width: min(360px, calc(100vw - 42px)); }

@@ -3,14 +3,18 @@ import { GLTFLoader } from "../vendor/GLTFLoader.js";
 
 const MODEL_URLS = {
   room: "models/art_gallery.glb",
+  roomAlt: "models/gallery_round_flatfloor_baked.glb",
   earth: "models/planet_earth.glb",
+  greeting: "models/greeting_waving_110_frames_loop.glb",
   walk: "models/male_slow_walk_40_frames_loop.glb",
   jog: "models/male_jogging_30_frames_loop.glb"
 };
 
 const MODEL_WEIGHTS = {
   [MODEL_URLS.room]: 13586552,
+  [MODEL_URLS.roomAlt]: 16409036,
   [MODEL_URLS.earth]: 6703016,
+  [MODEL_URLS.greeting]: 348828,
   [MODEL_URLS.walk]: 348828,
   [MODEL_URLS.jog]: 331568
 };
@@ -37,6 +41,42 @@ function normalizeModel(model, targetHeight) {
   model.position.y -= scaledBox.min.y;
   model.updateMatrixWorld(true);
   return model;
+}
+
+function hasMaterialNamed(object, name) {
+  if (!object?.material) return false;
+  const materials = Array.isArray(object.material) ? object.material : [object.material];
+  return materials.some((material) => material?.name === name);
+}
+
+function getVisibleMeshBounds(object) {
+  const bounds = new THREE.Box3();
+  const meshBounds = new THREE.Box3();
+
+  object.updateMatrixWorld(true);
+  object.traverse((child) => {
+    if (!child.isMesh || !child.visible || !child.geometry) return;
+    if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+    if (!child.geometry.boundingBox) return;
+    meshBounds.copy(child.geometry.boundingBox).applyMatrix4(child.matrixWorld);
+    bounds.union(meshBounds);
+  });
+
+  return bounds;
+}
+
+function getMaterialBounds(object, materialName) {
+  const bounds = new THREE.Box3();
+
+  object.updateMatrixWorld(true);
+  object.traverse((child) => {
+    if (!child.isMesh || !child.visible || !child.geometry || !hasMaterialNamed(child, materialName)) return;
+    if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+    if (!child.geometry.boundingBox) return;
+    bounds.union(child.geometry.boundingBox.clone().applyMatrix4(child.matrixWorld));
+  });
+
+  return bounds;
 }
 
 function makeLabelTexture(project) {
@@ -132,10 +172,13 @@ export class GalleryExperience {
     this.dragDistance = 0;
     this.hoveredProject = null;
     this.frameMeshes = [];
+    this.frameGroups = [];
+    this.ringMode = false;
+    this.isAltRoom = false;
     this.clock = new THREE.Clock();
     this.cameraYaw = 0;
-    this.cameraPitch = 0.22;
-    this.cameraDistance = 3.7;
+    this.cameraPitch = 0;
+    this.cameraDistance = 2;
     this.raycaster = new THREE.Raycaster();
     this.centerPointer = new THREE.Vector2(0, 0);
     this.animate = this.animate.bind(this);
@@ -201,6 +244,7 @@ export class GalleryExperience {
     };
     this.mobileStick.addEventListener("pointerdown", (event) => {
       if (!this.active) return;
+      if (this.greetingActive) this.switchFromGreeting();
       pointerId = event.pointerId;
       this.mobileStick.setPointerCapture(pointerId);
       updateStick(event);
@@ -224,6 +268,7 @@ export class GalleryExperience {
 
   handleKeyDown(event) {
     if (!this.active) return;
+    if (this.greetingActive) this.switchFromGreeting();
     if (["KeyW", "KeyA", "KeyS", "KeyD", "ShiftLeft", "ShiftRight"].includes(event.code)) {
       this.keys.add(event.code);
       event.preventDefault();
@@ -249,6 +294,7 @@ export class GalleryExperience {
 
   handlePointerDown(event) {
     if (!this.active || event.pointerType === "touch" || event.button !== 0) return;
+    if (this.greetingActive) this.switchFromGreeting();
     this.dragging = true;
     this.dragDistance = 0;
     this.lastPointer = { x: event.clientX, y: event.clientY };
@@ -311,16 +357,19 @@ export class GalleryExperience {
         }, reject);
       });
 
-      const [room, earth, walk, jog] = await Promise.all([
+      const [room, roomAlt, earth, greeting, walk, jog] = await Promise.all([
         loadOne(MODEL_URLS.room),
+        loadOne(MODEL_URLS.roomAlt),
         loadOne(MODEL_URLS.earth),
+        loadOne(MODEL_URLS.greeting),
         loadOne(MODEL_URLS.walk),
         loadOne(MODEL_URLS.jog)
       ]);
 
       this.setupRoom(room.scene);
+      this.roomAlt = roomAlt.scene;
       this.setupEarth(earth);
-      this.setupPlayer(walk, jog);
+      this.setupPlayer(walk, jog, greeting);
       this.createProjectFrames();
       this.loaded = true;
       onProgress?.(1);
@@ -335,18 +384,46 @@ export class GalleryExperience {
     }
   }
 
-  setupRoom(room) {
+  setupRoom(room, { alternate = false, anchor = null } = {}) {
+    if (!room.userData.lancySourceTransform) {
+      room.userData.lancySourceTransform = {
+        position: room.position.toArray(),
+        scale: room.scale.toArray()
+      };
+    }
+    room.position.fromArray(room.userData.lancySourceTransform.position);
+    room.scale.fromArray(room.userData.lancySourceTransform.scale);
+
+    if (alternate) {
+      // The alternate asset ships with a large, very dark baked sky sphere.
+      // It is decorative in the original viewer, but here it blocks the camera
+      // and also corrupts the room dimensions used for scaling and navigation.
+      room.traverse((child) => {
+        if (hasMaterialNamed(child, "Skybox")) child.visible = false;
+      });
+    }
+
     room.updateMatrixWorld(true);
-    let box = new THREE.Box3().setFromObject(room);
-    const size = box.getSize(new THREE.Vector3());
-    const horizontalSize = Math.max(size.x, size.z, 1);
-    room.scale.multiplyScalar(24 / horizontalSize);
+    let box = getVisibleMeshBounds(room);
+    if (alternate) {
+      room.scale.multiplyScalar(3);
+    } else {
+      const size = box.getSize(new THREE.Vector3());
+      const horizontalSize = Math.max(size.x, size.z, 1);
+      room.scale.multiplyScalar(24 / horizontalSize);
+    }
     room.updateMatrixWorld(true);
-    box = new THREE.Box3().setFromObject(room);
-    const center = box.getCenter(new THREE.Vector3());
-    room.position.x -= center.x;
-    room.position.z -= center.z;
-    room.position.y -= box.min.y;
+    box = getVisibleMeshBounds(room);
+    const roomAnchor = anchor || new THREE.Vector3(0, 0, 0);
+    // The alternate model contains decorative geometry far outside the actual
+    // gallery, so its full bounding-box center is not the room's usable center.
+    // Anchor against the baked floor instead, placing the player in the room.
+    const floorAnchorBounds = alternate ? getMaterialBounds(room, "Floor_baked") : box;
+    const anchorBounds = floorAnchorBounds.isEmpty() ? box : floorAnchorBounds;
+    const center = anchorBounds.getCenter(new THREE.Vector3());
+    room.position.x += roomAnchor.x - center.x;
+    room.position.z += roomAnchor.z - center.z;
+    room.position.y += roomAnchor.y - (alternate ? anchorBounds.max.y : anchorBounds.min.y);
     room.updateMatrixWorld(true);
 
     room.traverse((child) => {
@@ -360,11 +437,18 @@ export class GalleryExperience {
     });
     this.scene.add(room);
     this.room = room;
-    this.roomBounds = new THREE.Box3().setFromObject(room);
+    if (!this.roomDefault) this.roomDefault = room;
+    this.roomBounds = getVisibleMeshBounds(room);
     const roomSize = this.roomBounds.getSize(new THREE.Vector3());
-    // The gallery asset contains foundation geometry below the visible floor.
-    // Lift interactive objects to the finished floor surface instead of the raw bounding-box minimum.
-    this.floorLevel = this.roomBounds.min.y + clamp(roomSize.y * 0.17, 0.72, 0.9);
+    if (alternate) {
+      const floorBounds = getMaterialBounds(room, "Floor_baked");
+      // The switched model is intentionally anchored by its bottom center to
+      // the player's standing point, which is also the interaction floor.
+      this.floorLevel = anchor ? anchor.y : (floorBounds.isEmpty() ? this.roomBounds.min.y : floorBounds.max.y);
+    } else {
+      // The default gallery asset contains foundation geometry below the visible floor.
+      this.floorLevel = this.roomBounds.min.y + clamp(roomSize.y * 0.17, 0.72, 0.9);
+    }
     this.walkBounds = {
       minX: this.roomBounds.min.x + Math.min(1.4, roomSize.x * 0.08),
       maxX: this.roomBounds.max.x - Math.min(1.4, roomSize.x * 0.08),
@@ -381,7 +465,12 @@ export class GalleryExperience {
   setupEarth(gltf) {
     const earth = normalizeModel(gltf.scene, 2.45);
     const floor = this.floorLevel;
-    earth.position.set(-4.15, floor + 0.62, 0.35);
+    earth.scale.multiplyScalar(2);
+    earth.position.set(0, 0, 0);
+    earth.updateMatrixWorld(true);
+    const earthBounds = new THREE.Box3().setFromObject(earth);
+    const earthCenter = earthBounds.getCenter(new THREE.Vector3());
+    earth.position.set(-earthCenter.x, floor + 0.42 - earthBounds.min.y, -earthCenter.z);
     earth.traverse((child) => {
       if (child.isMesh && child.material) {
         child.material.metalness = Math.min(0.42, child.material.metalness || 0);
@@ -397,30 +486,37 @@ export class GalleryExperience {
       new THREE.CylinderGeometry(1.45, 1.65, 0.42, 48),
       new THREE.MeshStandardMaterial({ color: 0x111a20, metalness: 0.72, roughness: 0.28 })
     );
-    pedestal.position.set(-4.15, floor + 0.21, 0.35);
+    pedestal.position.set(0, floor + 0.21, 0);
     this.scene.add(pedestal);
-    this.earthBlockerRadius = 2.05;
-    this.earthPosition2D = new THREE.Vector2(-4.15, 0.35);
   }
 
-  setupPlayer(walkGltf, jogGltf) {
+  setupPlayer(walkGltf, jogGltf, greetingGltf) {
     this.player = new THREE.Group();
+    this.greetingModel = normalizeModel(greetingGltf.scene, 1.76);
     this.slowModel = normalizeModel(walkGltf.scene, 1.76);
     this.jogModel = normalizeModel(jogGltf.scene, 1.76);
-    this.player.add(this.slowModel, this.jogModel);
+    this.player.add(this.greetingModel, this.slowModel, this.jogModel);
+    this.player.scale.set(0.7, 0.7, 0.7);
+    this.greetingModel.visible = true;
+    this.slowModel.visible = false;
     this.jogModel.visible = false;
-    this.player.position.set(0.8, this.floorLevel + 0.40, 3.2);
-    this.player.rotation.y = Math.PI;
+    this.player.position.set(-7.15, 1.12, 3.36);
     this.scene.add(this.player);
 
+    this.greetingMixer = new THREE.AnimationMixer(this.greetingModel);
     this.walkMixer = new THREE.AnimationMixer(this.slowModel);
     this.jogMixer = new THREE.AnimationMixer(this.jogModel);
+    this.greetingAction = this.greetingMixer.clipAction(greetingGltf.animations[0]);
     this.walkAction = this.walkMixer.clipAction(walkGltf.animations[0]);
     this.jogAction = this.jogMixer.clipAction(jogGltf.animations[0]);
+    this.greetingAction.play();
     this.walkAction.play();
     this.jogAction.play();
     this.walkAction.paused = true;
+    this.jogAction.paused = true;
     this.currentMotion = "idle";
+    this.greetingActive = true;
+    this._showGreetingDialog();
     this.updateCameraPosition(1);
   }
 
@@ -428,36 +524,33 @@ export class GalleryExperience {
     const bounds = this.roomBounds;
     const size = bounds.getSize(new THREE.Vector3());
     const center = bounds.getCenter(new THREE.Vector3());
-    const frameWidth = clamp(size.x * 0.12, 2.35, 2.7);
+    const floor = this.floorLevel;
+
+    if (this.ringMode) {
+      this.createProjectFramesRing(bounds, floor);
+      return;
+    }
+
+    // Default layout: all frames in a single horizontal row on the back wall.
+    const frameWidth = clamp(size.x * 0.12, 1.4, 1.8);
     const frameHeight = frameWidth * 0.625;
-    const displayCenterX = center.x + 1.65;
-    // Keep the portfolio wall in front of the room model's internal partitions.
-    // The imported gallery contains overlapping architectural shells near the
-    // rear bound, which otherwise hide the lower row from the entrance view.
-    const backWallZ = center.z + 1.0;
-    const xSpacing = clamp(size.x * 0.15, 3.0, 3.45);
-    const rowGap = frameHeight + 0.2;
+    const spacing = frameWidth + 0.18;
+    const totalWidth = (this.projects.length - 1) * spacing;
+    const startX = center.x - totalWidth;
+    const wallZ = (bounds.min.z + bounds.max.z) / 2 + size.z * 0.35;
+    const frameY = floor + 1.55;
 
-    const displayWall = new THREE.Mesh(
-      new THREE.BoxGeometry(Math.min(9.8, size.x * 0.66), 4.55, 0.14),
-      new THREE.MeshStandardMaterial({
-        color: 0x0b1319,
-        metalness: 0.42,
-        roughness: 0.46
-      })
-    );
-    displayWall.position.set(displayCenterX, this.floorLevel + 2.2, backWallZ - 0.08);
-    this.scene.add(displayWall);
-
+    const N = this.projects.length;
     this.projects.forEach((project, index) => {
-      const column = index % 3;
-      const row = Math.floor(index / 3);
       const group = new THREE.Group();
+      const isLastTwo = index >= N - 2;
+      const extraGap = index > 0 && index < N - 2 ? spacing * 0.1 * index : 0;
       group.position.set(
-        displayCenterX + (column - 1) * xSpacing,
-        this.floorLevel + 1.28 + row * rowGap,
-        backWallZ + 0.02
+        startX + extraGap + (isLastTwo ? index - N + 2 : index) * spacing  + (index === N - 1 ? spacing * 0.5 : 0),
+        frameY,
+        isLastTwo ? wallZ - 0.8 : wallZ - 6.6
       );
+      group.rotation.y = isLastTwo ? Math.PI : 0;
 
       const backing = new THREE.Mesh(
         new THREE.BoxGeometry(frameWidth + 0.18, frameHeight + 0.18, 0.08),
@@ -476,6 +569,96 @@ export class GalleryExperience {
       group.add(screen);
       this.scene.add(group);
       this.frameMeshes.push(screen);
+      this.frameGroups.push(group);
+    });
+  }
+
+  switchScene() {
+    if (!this.roomAlt) return;
+    const playerAnchor = this.player.position.clone();
+    this.isAltRoom = !this.isAltRoom;
+    this.ringMode = this.isAltRoom;
+    this.frameMeshes = [];
+    this.frameGroups.forEach((group) => this.scene.remove(group));
+    this.frameGroups = [];
+    const toRemove = [];
+    this.scene.traverse((child) => {
+      if (child === this.room || child === this.roomAlt) toRemove.push(child);
+    });
+    toRemove.forEach((obj) => this.scene.remove(obj));
+    this.setupRoom(this.isAltRoom ? this.roomAlt : this.roomDefault, {
+      alternate: this.isAltRoom,
+      anchor: this.isAltRoom ? playerAnchor : null
+    });
+    // Both rooms are authored for the same output transform. The alternate
+    // room uses unlit baked materials, so changing lights or overexposing the
+    // renderer cannot fix (and can wash out) its textures.
+    this.renderer.toneMappingExposure = 0.92;
+    this.createProjectFrames();
+    if (this.isAltRoom) {
+      this.player.position.copy(playerAnchor);
+    } else {
+      this.player.position.set(
+        clamp(-7.15, this.walkBounds.minX, this.walkBounds.maxX),
+        this.floorLevel + 0.4,
+        clamp(3.36, this.walkBounds.minZ, this.walkBounds.maxZ)
+      );
+    }
+    this.updateCameraPosition(1);
+  }
+
+  createProjectFramesRing(bounds, floor) {
+    // Use the circular floor rather than the full model bounds. The imported
+    // asset contains decorative geometry outside the room, which otherwise
+    // pushes the project frames beyond the wall.
+    const floorBounds = getMaterialBounds(this.room, "Floor_baked");
+    const layoutBounds = floorBounds.isEmpty() ? bounds : floorBounds;
+    const size = layoutBounds.getSize(new THREE.Vector3());
+    const center = layoutBounds.getCenter(new THREE.Vector3());
+    const roomRadius = Math.min(size.x, size.z) * 0.5;
+    // The alternate room is shown at 3x its source scale. Keep the posters
+    // proportionate to that space so they remain legible from the entrance.
+    const frameWidth = clamp(roomRadius * 0.18, 3.2, 4.6);
+    const frameHeight = frameWidth * 0.625;
+    // Pull the posters far enough inside the wall to avoid being hidden by the
+    // baked wall/frame geometry while still reading as a wall-side display.
+    const radius = Math.max(frameWidth, roomRadius * 0.5);
+    const arcCenter = Math.PI;
+    const arcSpan = Math.PI * 0.62;
+    const facingTarget = this.player?.position || center;
+
+    this.projects.forEach((project, index) => {
+      const group = new THREE.Group();
+      const progress = this.projects.length > 1 ? index / (this.projects.length - 1) : 0.5;
+      const angle = arcCenter - arcSpan * 0.5 + progress * arcSpan;
+      const posX = center.x + Math.sin(angle) * radius;
+      const posZ = center.z + Math.cos(angle) * radius;
+      group.position.set(posX, floor + 1.55, posZ);
+      group.lookAt(facingTarget.x, group.position.y, facingTarget.z);
+
+      const backing = new THREE.Mesh(
+        new THREE.BoxGeometry(frameWidth + 0.18, frameHeight + 0.18, 0.08),
+        new THREE.MeshStandardMaterial({ color: 0xb9c6d3, metalness: 0.8, roughness: 0.24 })
+      );
+      backing.position.z = -0.045;
+      group.add(backing);
+
+      const screen = new THREE.Mesh(
+        new THREE.PlaneGeometry(frameWidth, frameHeight),
+        new THREE.MeshBasicMaterial({
+          map: makeLabelTexture(project),
+          color: 0xffffff,
+          side: THREE.DoubleSide,
+          toneMapped: false
+        })
+      );
+      screen.position.z = 0.012;
+      screen.userData.project = project;
+      screen.userData.baseScale = 1;
+      group.add(screen);
+      this.scene.add(group);
+      this.frameMeshes.push(screen);
+      this.frameGroups.push(group);
     });
   }
 
@@ -500,6 +683,32 @@ export class GalleryExperience {
 
   openProject(project) {
     window.open(project.url, "_blank", "noopener,noreferrer");
+  }
+
+  _showGreetingDialog() {
+    const el = document.getElementById("gallery-greeting");
+    if (!el) return;
+    this._greetingTimer && clearTimeout(this._greetingTimer);
+    el.classList.add("is-visible");
+    this._greetingTimer = setTimeout(() => this._hideGreetingDialog(), 10000);
+  }
+
+  _hideGreetingDialog() {
+    const el = document.getElementById("gallery-greeting");
+    if (!el) return;
+    this._greetingTimer && clearTimeout(this._greetingTimer);
+    el.classList.remove("is-visible");
+  }
+
+  switchFromGreeting() {
+    if (!this.greetingActive) return;
+    this.greetingActive = false;
+    this.greetingAction.paused = true;
+    this.greetingModel.visible = false;
+    this.slowModel.visible = true;
+    this.walkAction.paused = true;
+    this.walkMixer.update(0);
+    this._hideGreetingDialog();
   }
 
   setMotion(moving, running) {
@@ -541,12 +750,6 @@ export class GalleryExperience {
       next.x = clamp(next.x, this.walkBounds.minX, this.walkBounds.maxX);
       next.z = clamp(next.z, this.walkBounds.minZ, this.walkBounds.maxZ);
 
-      const fromEarth = new THREE.Vector2(next.x, next.z).sub(this.earthPosition2D);
-      if (fromEarth.length() < this.earthBlockerRadius) {
-        fromEarth.setLength(this.earthBlockerRadius);
-        next.x = this.earthPosition2D.x + fromEarth.x;
-        next.z = this.earthPosition2D.y + fromEarth.y;
-      }
       this.player.position.copy(next);
       const targetYaw = Math.atan2(direction.x, direction.z);
       let angleDifference = targetYaw - this.player.rotation.y;
@@ -601,11 +804,42 @@ export class GalleryExperience {
     window.requestAnimationFrame(this.animate);
     if (!this.active || !this.loaded) return;
     const delta = Math.min(0.05, this.clock.getDelta());
+    if (this.greetingActive) this.greetingMixer.update(delta);
     this.updateMovement(delta);
     this.updateCameraPosition(delta);
     this.earthMixer?.update(delta);
     if (this.earth && !this.earthMixer?._actions?.length) this.earth.rotation.y += delta * 0.08;
     this.updateProjectFocus();
+    this.updateCoords();
+    this.updateGreetingDialogPosition();
     this.renderer.render(this.scene, this.camera);
+  }
+
+  updateCoords() {
+    const el = document.getElementById("gallery-coords");
+    if (!el || !this.player) return;
+    el.textContent = `x ${this.player.position.x.toFixed(2)} y ${this.player.position.y.toFixed(2)} z ${this.player.position.z.toFixed(2)}`;
+  }
+
+  updateGreetingDialogPosition() {
+    const el = document.getElementById("gallery-greeting");
+    if (!el || !this.greetingActive || !this.player) return;
+    const worldPos = new THREE.Vector3();
+    this.player.getWorldPosition(worldPos);
+    worldPos.y += 1.0;
+    const projected = worldPos.clone().project(this.camera);
+    const w = this.canvas.offsetWidth;
+    const h = this.canvas.offsetHeight;
+    const sx = (projected.x * 0.5 + 0.5) * w;
+    const sy = (-projected.y * 0.5 + 0.5) * h;
+    if (projected.z > 1 || sx < -80 || sx > w + 80 || sy < -40 || sy > h + 40) {
+      el.classList.remove("is-visible");
+      return;
+    }
+    el.style.left = `${sx + 24}px`;
+    el.style.top = `${sy - 24}px`;
+    el.style.right = "auto";
+    el.style.transform = "translateY(-50%)";
+    if (!el.classList.contains("is-visible")) el.classList.add("is-visible");
   }
 }
