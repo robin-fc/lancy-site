@@ -199,7 +199,7 @@ export class GalleryExperience {
     this.scene.fog = new THREE.FogExp2(0x080b0f, 0.022);
     this.camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.05, 180);
 
-    const hemisphere = new THREE.HemisphereLight(0xdce8f4, 0x171b20, 0.82);
+    const hemisphere = new THREE.HemisphereLight(0xdce8f4, 0x171b20, 1.15);
     this.scene.add(hemisphere);
     const key = new THREE.DirectionalLight(0xf5f0e8, 1.35);
     key.position.set(4, 9, 7);
@@ -474,20 +474,28 @@ export class GalleryExperience {
     earth.traverse((child) => {
       if (child.isMesh && child.material) {
         child.material.metalness = Math.min(0.42, child.material.metalness || 0);
+        // 提升模型亮度：设置基础自发光
+        child.material.emissive = new THREE.Color(0x3c3c3c);
+        child.material.emissiveIntensity = 1.5;
         child.material.needsUpdate = true;
+
+        // 隐藏模型自带的扁平底座/圆盘
+        if (!child.geometry.boundingBox) child.geometry.computeBoundingBox();
+        const size = child.geometry.boundingBox.getSize(new THREE.Vector3());
+        const heightRatio = size.y / Math.max(size.x, size.z, 0.001);
+        if (heightRatio < 0.15 && size.y < 0.1) {
+          child.visible = false;
+        }
       }
     });
+    // 为地球增加专用补光，集中在模型位置
+    const earthFillLight = new THREE.PointLight(0xddeeff, 12, 10, 2);
+    earthFillLight.position.set(2, 3, 2);
+    earth.add(earthFillLight);
     this.scene.add(earth);
     this.earth = earth;
     this.earthMixer = new THREE.AnimationMixer(earth);
     if (gltf.animations[0]) this.earthMixer.clipAction(gltf.animations[0]).play();
-
-    const pedestal = new THREE.Mesh(
-      new THREE.CylinderGeometry(1.45, 1.65, 0.42, 48),
-      new THREE.MeshStandardMaterial({ color: 0x111a20, metalness: 0.72, roughness: 0.28 })
-    );
-    pedestal.position.set(0, floor + 0.21, 0);
-    this.scene.add(pedestal);
   }
 
   setupPlayer(walkGltf, jogGltf, greetingGltf) {
