@@ -926,10 +926,14 @@ export class GalleryExperience {
     return this.projects[this.desktopProjectIndex % this.projects.length];
   }
 
-  switchScene() {
+  switchScene(targetIndex = null) {
     if (!this.roomScenes.length) return;
+    const nextIndex = Number.isInteger(targetIndex)
+      ? clamp(targetIndex, 0, this.roomScenes.length - 1)
+      : (this.roomSceneIndex + 1) % this.roomScenes.length;
+    if (nextIndex === this.roomSceneIndex) return;
     const playerAnchor = this.player.position.clone();
-    this.roomSceneIndex = (this.roomSceneIndex + 1) % this.roomScenes.length;
+    this.roomSceneIndex = nextIndex;
     const nextRoom = this.roomScenes[this.roomSceneIndex];
     this.currentRoomConfig = nextRoom;
     this.ringMode = Boolean(nextRoom.ringMode);

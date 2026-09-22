@@ -43,7 +43,7 @@ export const projects = [
     id: "quant", lab: "06", short: "QUANT", title: "AI 量化交易",
     kicker: "QUANTITATIVE SYSTEMS",
     description: "连接市场数据、策略组合与交易信号的 AI 量化研究平台，支持多币种与多策略分析。",
-    url: "https://quant.lancy.site", image: "images/quant.jpg",
+    url: "https://quant.lancy.site", image: "images/quant.png",
     capabilities: ["市场分析", "策略组合", "交易信号", "多币种"],
     lat: 5, lon: 25, size: 70
   }

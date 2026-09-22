@@ -25,6 +25,8 @@ const galleryFocusTitle = document.querySelector("#gallery-focus-title");
 const galleryFocusAction = document.querySelector("#gallery-focus-action");
 const galleryError = document.querySelector("#gallery-error");
 const galleryErrorCopy = document.querySelector("#gallery-error-copy");
+const gallerySwitch = document.querySelector("#gallery-switch");
+const gallerySceneMenu = document.querySelector("#gallery-scene-menu");
 const markerElements = new Map();
 const indexElements = new Map();
 let selectedProject = null;
@@ -35,6 +37,24 @@ let galleryReady = false;
 let portalJourneyComplete = false;
 let currentLoadProgress = 0;
 let galleryRevealPending = false;
+
+function syncSceneMenuState() {
+  const activeIndex = gallery?.roomSceneIndex ?? 0;
+  gallerySceneMenu?.querySelectorAll(".gallery-scene-option").forEach((button) => {
+    button.classList.toggle("is-active", Number(button.dataset.sceneIndex) === activeIndex);
+  });
+}
+
+function setSceneMenuOpen(open) {
+  if (!gallerySceneMenu || !gallerySwitch) return;
+  gallerySceneMenu.hidden = !open;
+  gallerySwitch.setAttribute("aria-expanded", String(open));
+  if (open) syncSceneMenuState();
+}
+
+function toggleSceneMenu() {
+  setSceneMenuOpen(Boolean(gallerySceneMenu?.hidden));
+}
 
 function updateMarkerPosition(id, position) {
   const marker = markerElements.get(id);
@@ -297,7 +317,22 @@ function initialize() {
   portalButton.addEventListener("focus", () => {
     createGallery().catch((error) => console.warn("Unable to preload the gallery.", error));
   });
-  document.querySelector("#gallery-switch").addEventListener("click", () => gallery?.switchScene());
+  gallerySwitch?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleSceneMenu();
+  });
+  gallerySceneMenu?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    const option = event.target.closest(".gallery-scene-option");
+    if (!option) return;
+    gallery?.switchScene(Number(option.dataset.sceneIndex));
+    syncSceneMenuState();
+    setSceneMenuOpen(false);
+  });
+  document.addEventListener("click", (event) => {
+    if (gallerySceneMenu?.hidden) return;
+    if (galleryUi?.contains(event.target)) setSceneMenuOpen(false);
+  });
   document.querySelector("#gallery-back").addEventListener("click", returnToPlanet);
   document.querySelector("#gallery-error-back").addEventListener("click", returnToPlanet);
   document.querySelector("#gallery-retry").addEventListener("click", () => {
@@ -307,6 +342,10 @@ function initialize() {
     ensureGalleryLoaded().catch(showGalleryError);
   });
   window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !gallerySceneMenu?.hidden) {
+      setSceneMenuOpen(false);
+      return;
+    }
     if (event.key === "Escape" && selectedProject) {
       closeProject();
       return;
