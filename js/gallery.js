@@ -4,6 +4,8 @@ import { GLTFLoader } from "../vendor/GLTFLoader.js";
 const MODEL_URLS = {
   room: "models/art_gallery.glb",
   roomAlt: "models/gallery_round_flatfloor_baked.glb",
+  roomDiorama: "models/room_diorama_model.glb",
+  diningRoom: "models/dining_room__kichen_baked.glb",
   earth: "models/planet_earth.glb",
   greeting: "models/greeting_waving_110_frames_loop.glb",
   walk: "models/male_slow_walk_40_frames_loop.glb",
@@ -13,14 +15,17 @@ const MODEL_URLS = {
 const MODEL_WEIGHTS = {
   [MODEL_URLS.room]: 13586552,
   [MODEL_URLS.roomAlt]: 16409036,
+  [MODEL_URLS.roomDiorama]: 5305888,
+  [MODEL_URLS.diningRoom]: 27052900,
   [MODEL_URLS.earth]: 6703016,
-  [MODEL_URLS.greeting]: 348828,
+  [MODEL_URLS.greeting]: 435796,
   [MODEL_URLS.walk]: 348828,
   [MODEL_URLS.jog]: 331568
 };
 
 const CAMERA_MIN_DISTANCE = 2.55;
 const CAMERA_MAX_DISTANCE = 4.15;
+const ACTION_INTERACTION_DISTANCE = 34;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -152,6 +157,56 @@ function makeLabelTexture(project) {
   return texture;
 }
 
+function makeActionLabel(text, color) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 160;
+  const context = canvas.getContext("2d");
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+
+  context.fillStyle = "rgba(2, 8, 12, 0.76)";
+  context.strokeStyle = color;
+  context.lineWidth = 2;
+  const x = 24;
+  const y = 32;
+  const width = 464;
+  const height = 84;
+  const radius = 24;
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = color;
+  context.font = "600 34px Microsoft YaHei UI, sans-serif";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(text, 256, 74);
+
+  texture.needsUpdate = true;
+  const label = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false
+  }));
+  label.scale.set(1.18, 0.37, 1);
+  label.renderOrder = 100;
+  return label;
+}
+
 export class GalleryExperience {
   constructor(options) {
     this.renderer = options.renderer;
@@ -171,16 +226,26 @@ export class GalleryExperience {
     this.dragging = false;
     this.dragDistance = 0;
     this.hoveredProject = null;
+    this.hoveredAction = null;
     this.frameMeshes = [];
     this.frameGroups = [];
+    this.actionMeshes = [];
     this.ringMode = false;
-    this.isAltRoom = false;
+    this.roomScenes = [];
+    this.roomSceneIndex = 0;
+    this.currentRoomConfig = null;
+    this.desktopProjectIndex = 0;
     this.clock = new THREE.Clock();
     this.cameraYaw = 0;
     this.cameraPitch = 0;
     this.cameraDistance = 2;
+    this.cameraDistanceLimits = {
+      min: CAMERA_MIN_DISTANCE,
+      max: CAMERA_MAX_DISTANCE
+    };
     this.raycaster = new THREE.Raycaster();
     this.centerPointer = new THREE.Vector2(0, 0);
+    this.pointer = new THREE.Vector2();
     this.animate = this.animate.bind(this);
     this.resize = this.resize.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -281,7 +346,13 @@ export class GalleryExperience {
       event.preventDefault();
       this.adjustCameraDistance(0.22);
     }
-    if ((event.code === "KeyE" || event.code === "Enter") && this.hoveredProject) {
+    if ((event.code === "KeyE" || event.code === "Enter") && this.hoveredAction === "nextDesktopProject") {
+      event.preventDefault();
+      this.showNextDesktopProject();
+    } else if ((event.code === "KeyE" || event.code === "Enter") && this.hoveredAction === "openDesktopProject") {
+      event.preventDefault();
+      this.openProject(this.getActiveDesktopProject());
+    } else if ((event.code === "KeyE" || event.code === "Enter") && this.hoveredProject) {
       event.preventDefault();
       this.openProject(this.hoveredProject);
     }
@@ -314,15 +385,39 @@ export class GalleryExperience {
   handlePointerUp(event) {
     if (!this.active || !this.dragging) return;
     this.dragging = false;
-    if (this.dragDistance < 8 && this.hoveredProject) this.openProject(this.hoveredProject);
+    if (this.dragDistance < 8) {
+      const clickedAction = this.getPointerAction(event);
+      const action = clickedAction || this.hoveredAction;
+      if (action === "nextDesktopProject") {
+        this.showNextDesktopProject();
+      } else if (action === "openDesktopProject") {
+        this.openProject(this.getActiveDesktopProject());
+      } else if (this.hoveredProject) {
+        this.openProject(this.hoveredProject);
+      }
+    }
     this.canvas.releasePointerCapture?.(event.pointerId);
+  }
+
+  getPointerAction(event) {
+    if (!this.actionMeshes.length) return null;
+    const rect = this.canvas.getBoundingClientRect();
+    this.pointer.set(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const intersections = this.raycaster.intersectObjects(this.actionMeshes, false);
+    return intersections.length && intersections[0].distance < ACTION_INTERACTION_DISTANCE
+      ? intersections[0].object.userData.action
+      : null;
   }
 
   adjustCameraDistance(delta) {
     this.cameraDistance = clamp(
       this.cameraDistance + delta,
-      CAMERA_MIN_DISTANCE,
-      CAMERA_MAX_DISTANCE
+      this.cameraDistanceLimits.min,
+      this.cameraDistanceLimits.max
     );
   }
 
@@ -357,17 +452,71 @@ export class GalleryExperience {
         }, reject);
       });
 
-      const [room, roomAlt, earth, greeting, walk, jog] = await Promise.all([
+      const [room, roomAlt, roomDiorama, diningRoom, earth, greeting, walk, jog] = await Promise.all([
         loadOne(MODEL_URLS.room),
         loadOne(MODEL_URLS.roomAlt),
+        loadOne(MODEL_URLS.roomDiorama),
+        loadOne(MODEL_URLS.diningRoom),
         loadOne(MODEL_URLS.earth),
         loadOne(MODEL_URLS.greeting),
         loadOne(MODEL_URLS.walk),
         loadOne(MODEL_URLS.jog)
       ]);
 
-      this.setupRoom(room.scene);
-      this.roomAlt = roomAlt.scene;
+      this.roomScenes = [
+        { scene: room.scene, alternate: false, ringMode: false, preservePlayer: false, playerScale: 0.7 },
+        { scene: roomAlt.scene, alternate: true, ringMode: true, preservePlayer: true, anchorToPlayer: true, playerScale: 0.7 },
+        {
+          scene: roomDiorama.scene,
+          alternate: false,
+          ringMode: false,
+          desktopMode: true,
+          preservePlayer: false,
+          scaleMultiplier: 0.6,
+          playerScale: 3.0,
+          playerPosition: new THREE.Vector3(-2, 0.5, -0.52),
+          playerRotationY: Math.PI * 0.2,
+          cameraYaw: 0.78,
+          cameraPitch: 0.28,
+          cameraDistance: 20.12,
+          cameraDistanceLimits: {
+            min: 0.35,
+            max: 80
+          },
+          earthPosition: new THREE.Vector3(-4.8, 0, -3.28),
+          earthFloorOffset: 0.74,
+          earthScale: 1.05
+        },
+        {
+          scene: diningRoom.scene,
+          alternate: false,
+          ringMode: false,
+          preservePlayer: false,
+          scaleMultiplier: 0.8,
+          projectFrameLayout: {
+            zOffset: -13,
+            lastTwoZOffset: -1.2,
+            lastTwoRotationY: Math.PI * 0.5,
+            xOffsetFrameWidthFactor: 0.5,
+            firstFourXOffsetFrameWidthFactor: 0.5,
+            lastTwoAxis: "z",
+            lastTwoZSpacingFactor: 1.15
+          },
+          playerScale: 1.4,
+          playerPosition: new THREE.Vector3(0.6, 0, 3.64),
+          earthPosition: new THREE.Vector3(4, 0, -4.82),
+          cameraYaw: 0.51,
+          cameraPitch: 0.27,
+          cameraDistance: 4.15,
+          cameraDistanceLimits: {
+            min: 0.35,
+            max: 6.3
+          }
+        }
+      ];
+      this.roomSceneIndex = 0;
+      this.currentRoomConfig = this.roomScenes[this.roomSceneIndex];
+      this.setupRoom(this.roomScenes[this.roomSceneIndex].scene, this.roomScenes[this.roomSceneIndex]);
       this.setupEarth(earth);
       this.setupPlayer(walk, jog, greeting);
       this.createProjectFrames();
@@ -384,7 +533,7 @@ export class GalleryExperience {
     }
   }
 
-  setupRoom(room, { alternate = false, anchor = null } = {}) {
+  setupRoom(room, { alternate = false, anchor = null, scaleMultiplier = 1 } = {}) {
     if (!room.userData.lancySourceTransform) {
       room.userData.lancySourceTransform = {
         position: room.position.toArray(),
@@ -412,6 +561,7 @@ export class GalleryExperience {
       const horizontalSize = Math.max(size.x, size.z, 1);
       room.scale.multiplyScalar(24 / horizontalSize);
     }
+    room.scale.multiplyScalar(scaleMultiplier);
     room.updateMatrixWorld(true);
     box = getVisibleMeshBounds(room);
     const roomAnchor = anchor || new THREE.Vector3(0, 0, 0);
@@ -437,7 +587,6 @@ export class GalleryExperience {
     });
     this.scene.add(room);
     this.room = room;
-    if (!this.roomDefault) this.roomDefault = room;
     this.roomBounds = getVisibleMeshBounds(room);
     const roomSize = this.roomBounds.getSize(new THREE.Vector3());
     if (alternate) {
@@ -494,8 +643,24 @@ export class GalleryExperience {
     earth.add(earthFillLight);
     this.scene.add(earth);
     this.earth = earth;
+    this.earthBaseTransform = {
+      position: earth.position.clone(),
+      scale: earth.scale.clone()
+    };
     this.earthMixer = new THREE.AnimationMixer(earth);
     if (gltf.animations[0]) this.earthMixer.clipAction(gltf.animations[0]).play();
+  }
+
+  applyEarthPlacement(roomConfig = this.currentRoomConfig) {
+    if (!this.earth || !this.earthBaseTransform) return;
+    if (roomConfig?.earthPosition) {
+      this.earth.position.copy(roomConfig.earthPosition);
+      this.earth.position.y = this.floorLevel + (roomConfig.earthFloorOffset ?? 0.42);
+      this.earth.scale.copy(this.earthBaseTransform.scale).multiplyScalar(roomConfig.earthScale || 1);
+      return;
+    }
+    this.earth.position.copy(this.earthBaseTransform.position);
+    this.earth.scale.copy(this.earthBaseTransform.scale);
   }
 
   setupPlayer(walkGltf, jogGltf, greetingGltf) {
@@ -539,6 +704,11 @@ export class GalleryExperience {
       return;
     }
 
+    if (this.currentRoomConfig?.desktopMode) {
+      this.createProjectFramesDesktop(floor);
+      return;
+    }
+
     // Default layout: all frames in a single horizontal row on the back wall.
     const frameWidth = clamp(size.x * 0.12, 1.4, 1.8);
     const frameHeight = frameWidth * 0.625;
@@ -547,18 +717,36 @@ export class GalleryExperience {
     const startX = center.x - totalWidth;
     const wallZ = (bounds.min.z + bounds.max.z) / 2 + size.z * 0.35;
     const frameY = floor + 1.55;
+    const layout = this.currentRoomConfig?.projectFrameLayout || {};
+    const defaultZOffset = layout.zOffset ?? -6.6;
+    const lastTwoZOffset = layout.lastTwoZOffset + layout.zOffset/2 ?? -0.8;
+    const lastTwoRotationY = layout.lastTwoRotationY ?? Math.PI;
+    const xOffset = frameWidth * (layout.xOffsetFrameWidthFactor ?? 0);
+    const firstFourXOffset = frameWidth * (layout.firstFourXOffsetFrameWidthFactor ?? 0);
+    const lastTwoAxis = layout.lastTwoAxis || "x";
+    const lastTwoZSpacing = spacing * (layout.lastTwoZSpacingFactor ?? 1);
 
     const N = this.projects.length;
     this.projects.forEach((project, index) => {
       const group = new THREE.Group();
       const isLastTwo = index >= N - 2;
       const extraGap = index > 0 && index < N - 2 ? spacing * 0.1 * index : 0;
+      let frameX = startX + extraGap + (isLastTwo ? index - N + 2 : index) * spacing  + (index === N - 1 ? spacing * 0.5 : 0) + xOffset;
+      let frameZ = wallZ + (isLastTwo ? lastTwoZOffset : defaultZOffset);
+      if (!isLastTwo) frameX += firstFourXOffset;
+
+      if (isLastTwo && lastTwoAxis === "z") {
+        const lastTwoIndex = index - (N - 2);
+        frameX = startX + xOffset;
+        frameZ = wallZ + lastTwoZOffset + (lastTwoIndex - 0.5) * lastTwoZSpacing;
+      }
+
       group.position.set(
-        startX + extraGap + (isLastTwo ? index - N + 2 : index) * spacing  + (index === N - 1 ? spacing * 0.5 : 0),
+        frameX,
         frameY,
-        isLastTwo ? wallZ - 0.8 : wallZ - 6.6
+        frameZ
       );
-      group.rotation.y = isLastTwo ? Math.PI : 0;
+      group.rotation.y = isLastTwo ? lastTwoRotationY : 0;
 
       const backing = new THREE.Mesh(
         new THREE.BoxGeometry(frameWidth + 0.18, frameHeight + 0.18, 0.08),
@@ -581,30 +769,208 @@ export class GalleryExperience {
     });
   }
 
-  switchScene() {
-    if (!this.roomAlt) return;
-    const playerAnchor = this.player.position.clone();
-    this.isAltRoom = !this.isAltRoom;
-    this.ringMode = this.isAltRoom;
+  createProjectFramesDesktop(floor) {
+    const frameWidth = 2;
+    const frameHeight = frameWidth * 0.52;
+    const screenBase = new THREE.Vector3(0.34, floor + 3.6, -5.02);
+    const activeIndex = this.desktopProjectIndex % this.projects.length;
+
+    this.projects.forEach((project, offset) => {
+      const index = (activeIndex + offset) % this.projects.length;
+      const stackedProject = this.projects[index];
+      const group = new THREE.Group();
+      const depth = this.projects.length - offset;
+      group.position.set(
+        screenBase.x + offset * 0.035,
+        screenBase.y + offset * 0.026,
+        screenBase.z - offset * 0.018
+      );
+      group.scale.setScalar(1 - offset * 0.035);
+      group.renderOrder = depth;
+
+      const backing = new THREE.Mesh(
+        new THREE.BoxGeometry(frameWidth + 0.14, frameHeight + 0.14, 0.045),
+        new THREE.MeshStandardMaterial({
+          color: offset === 0 ? 0x9eb8c9 : 0x415363,
+          metalness: 0.72,
+          roughness: 0.28
+        })
+      );
+      backing.position.z = -0.035;
+      group.add(backing);
+
+      const screen = new THREE.Mesh(
+        new THREE.PlaneGeometry(frameWidth, frameHeight),
+        new THREE.MeshBasicMaterial({
+          map: makeLabelTexture(stackedProject),
+          color: offset === 0 ? 0xffffff : 0x9fb0bb,
+          toneMapped: false,
+          transparent: true,
+          opacity: offset === 0 ? 1 : 0.48
+        })
+      );
+      screen.position.z = 0.012;
+      screen.renderOrder = depth + 1;
+      screen.userData.project = offset === 0 ? stackedProject : null;
+      group.add(screen);
+
+      this.scene.add(group);
+      this.frameGroups.push(group);
+      if (offset === 0) this.frameMeshes.push(screen);
+    });
+
+    const indicator = new THREE.Group();
+    indicator.position.set(1.5, floor + 2.75, -3.75);
+    indicator.rotation.x = -Math.PI * 0.5;
+
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.22, 0.016, 12, 48),
+      new THREE.MeshBasicMaterial({ color: 0x75e7ef, toneMapped: false })
+    );
+    ring.userData.action = "nextDesktopProject";
+    indicator.add(ring);
+
+    const dot = new THREE.Mesh(
+      new THREE.CircleGeometry(0.055, 24),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.82,
+        toneMapped: false
+      })
+    );
+    dot.position.z = 0.004;
+    dot.userData.action = "nextDesktopProject";
+    indicator.add(dot);
+
+    const hitArea = new THREE.Mesh(
+      new THREE.CircleGeometry(0.34, 36),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+      })
+    );
+    hitArea.position.z = 0.008;
+    hitArea.userData.action = "nextDesktopProject";
+    indicator.add(hitArea);
+
+    this.scene.add(indicator);
+    this.frameGroups.push(indicator);
+    this.actionMeshes.push(ring, dot, hitArea);
+
+    const switchLabel = makeActionLabel("切换子网站", "rgba(117, 231, 239, 0.92)");
+    switchLabel.position.set(indicator.position.x, indicator.position.y + 0.2, indicator.position.z - 0.46);
+    this.scene.add(switchLabel);
+    this.frameGroups.push(switchLabel);
+
+    const openIndicator = new THREE.Group();
+    openIndicator.position.set(screenBase.x + 1.22, screenBase.y + 0.58, screenBase.z + 0.1);
+
+    const openRing = new THREE.Mesh(
+      new THREE.TorusGeometry(0.13, 0.012, 10, 40),
+      new THREE.MeshBasicMaterial({ color: 0xffb06c, toneMapped: false })
+    );
+    openRing.userData.action = "openDesktopProject";
+    openIndicator.add(openRing);
+
+    const openDot = new THREE.Mesh(
+      new THREE.CircleGeometry(0.038, 20),
+      new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.9,
+        toneMapped: false
+      })
+    );
+    openDot.position.z = 0.004;
+    openDot.userData.action = "openDesktopProject";
+    openIndicator.add(openDot);
+
+    const openHitArea = new THREE.Mesh(
+      new THREE.CircleGeometry(0.42, 40),
+      new THREE.MeshBasicMaterial({
+        transparent: true,
+        opacity: 0,
+        depthWrite: false
+      })
+    );
+    openHitArea.position.z = 0.02;
+    openHitArea.userData.action = "openDesktopProject";
+    openIndicator.add(openHitArea);
+
+    this.scene.add(openIndicator);
+    this.frameGroups.push(openIndicator);
+    this.actionMeshes.push(openRing, openDot, openHitArea);
+
+    const openLabel = makeActionLabel("打开当前网站", "rgba(255, 176, 108, 0.95)");
+    openLabel.position.set(openIndicator.position.x + 0.18, openIndicator.position.y + 0.25, openIndicator.position.z + 0.02);
+    this.scene.add(openLabel);
+    this.frameGroups.push(openLabel);
+  }
+
+  showNextDesktopProject() {
+    if (!this.currentRoomConfig?.desktopMode) return;
+    this.desktopProjectIndex = (this.desktopProjectIndex + 1) % this.projects.length;
+    this.hoveredProject = null;
     this.frameMeshes = [];
+    this.actionMeshes = [];
+    this.frameGroups.forEach((group) => this.scene.remove(group));
+    this.frameGroups = [];
+    this.createProjectFrames();
+    this.updateProjectFocus();
+  }
+
+  getActiveDesktopProject() {
+    if (!this.projects.length) return null;
+    return this.projects[this.desktopProjectIndex % this.projects.length];
+  }
+
+  switchScene() {
+    if (!this.roomScenes.length) return;
+    const playerAnchor = this.player.position.clone();
+    this.roomSceneIndex = (this.roomSceneIndex + 1) % this.roomScenes.length;
+    const nextRoom = this.roomScenes[this.roomSceneIndex];
+    this.currentRoomConfig = nextRoom;
+    this.ringMode = Boolean(nextRoom.ringMode);
+    this.frameMeshes = [];
+    this.actionMeshes = [];
+    this.hoveredAction = null;
     this.frameGroups.forEach((group) => this.scene.remove(group));
     this.frameGroups = [];
     const toRemove = [];
     this.scene.traverse((child) => {
-      if (child === this.room || child === this.roomAlt) toRemove.push(child);
+      if (this.roomScenes.some((roomScene) => child === roomScene.scene)) toRemove.push(child);
     });
     toRemove.forEach((obj) => this.scene.remove(obj));
-    this.setupRoom(this.isAltRoom ? this.roomAlt : this.roomDefault, {
-      alternate: this.isAltRoom,
-      anchor: this.isAltRoom ? playerAnchor : null
+    this.setupRoom(nextRoom.scene, {
+      alternate: nextRoom.alternate,
+      anchor: nextRoom.anchorToPlayer ? playerAnchor : null,
+      scaleMultiplier: nextRoom.scaleMultiplier
     });
     // Both rooms are authored for the same output transform. The alternate
     // room uses unlit baked materials, so changing lights or overexposing the
     // renderer cannot fix (and can wash out) its textures.
     this.renderer.toneMappingExposure = 0.92;
     this.createProjectFrames();
-    if (this.isAltRoom) {
+    this.applyEarthPlacement(nextRoom);
+    this.cameraDistanceLimits = nextRoom.cameraDistanceLimits || {
+      min: CAMERA_MIN_DISTANCE,
+      max: CAMERA_MAX_DISTANCE
+    };
+    if (typeof nextRoom.cameraYaw === "number") this.cameraYaw = nextRoom.cameraYaw;
+    if (typeof nextRoom.cameraPitch === "number") this.cameraPitch = nextRoom.cameraPitch;
+    this.cameraDistance = clamp(
+      nextRoom.cameraDistance ?? this.cameraDistance,
+      this.cameraDistanceLimits.min,
+      this.cameraDistanceLimits.max
+    );
+    this.player.scale.setScalar(nextRoom.playerScale || 0.7);
+    this.player.rotation.y = nextRoom.playerRotationY ?? 0;
+    if (nextRoom.preservePlayer) {
       this.player.position.copy(playerAnchor);
+    } else if (nextRoom.playerPosition) {
+      this.player.position.copy(nextRoom.playerPosition);
     } else {
       this.player.position.set(
         clamp(-7.15, this.walkBounds.minX, this.walkBounds.maxX),
@@ -685,11 +1051,13 @@ export class GalleryExperience {
     this.keys.clear();
     this.joystick.set(0, 0);
     this.hoveredProject = null;
+    this.hoveredAction = null;
     this.canvas.style.cursor = "default";
     this.onFocusProject?.(null);
   }
 
   openProject(project) {
+    if (!project?.url) return;
     window.open(project.url, "_blank", "noopener,noreferrer");
   }
 
@@ -747,6 +1115,7 @@ export class GalleryExperience {
     if (input.lengthSq() > 1) input.normalize();
     const moving = input.lengthSq() > 0.012;
     const running = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight") || this.mobileRunning;
+
     this.setMotion(moving, running);
 
     if (moving) {
@@ -785,17 +1154,30 @@ export class GalleryExperience {
 
   updateProjectFocus() {
     this.raycaster.setFromCamera(this.centerPointer, this.camera);
+    const actionIntersections = this.raycaster.intersectObjects(this.actionMeshes, false);
+    const nextAction = actionIntersections.length && actionIntersections[0].distance < ACTION_INTERACTION_DISTANCE
+      ? actionIntersections[0].object.userData.action
+      : null;
     const intersections = this.raycaster.intersectObjects(this.frameMeshes, false);
-    const next = intersections.length && intersections[0].distance < 9 ? intersections[0].object.userData.project : null;
-    if (next === this.hoveredProject) return;
+    const next = !nextAction && intersections.length && intersections[0].distance < 9
+      ? intersections[0].object.userData.project
+      : null;
+    const focusProject = next || (nextAction === "openDesktopProject" ? this.getActiveDesktopProject() : null);
+    if (next === this.hoveredProject && nextAction === this.hoveredAction) return;
     this.hoveredProject = next;
+    this.hoveredAction = nextAction;
     this.frameMeshes.forEach((mesh) => {
       const focused = mesh.userData.project === next;
       mesh.scale.setScalar(focused ? 1.035 : 1);
       mesh.material.color.set(focused ? 0xffffff : 0xdce5ee);
     });
-    this.canvas.style.cursor = next ? "pointer" : (this.dragging ? "grabbing" : "grab");
-    this.onFocusProject?.(next);
+    this.actionMeshes.forEach((mesh) => {
+      const focused = mesh.userData.action === nextAction;
+      mesh.scale.setScalar(focused ? 1.22 : 1);
+      if (mesh.material?.color) mesh.material.color.set(focused ? 0xffffff : 0x75e7ef);
+    });
+    this.canvas.style.cursor = next || nextAction ? "pointer" : (this.dragging ? "grabbing" : "grab");
+    this.onFocusProject?.(focusProject);
   }
 
   resize() {
@@ -826,7 +1208,18 @@ export class GalleryExperience {
   updateCoords() {
     const el = document.getElementById("gallery-coords");
     if (!el || !this.player) return;
-    el.textContent = `x ${this.player.position.x.toFixed(2)} y ${this.player.position.y.toFixed(2)} z ${this.player.position.z.toFixed(2)}`;
+    const formatVec = (label, vector) => {
+      return `${label} x ${vector.x.toFixed(2)} y ${vector.y.toFixed(2)} z ${vector.z.toFixed(2)}`;
+    };
+    const playerScale = this.player.scale.x.toFixed(2);
+    el.textContent = [
+      `scene ${this.roomSceneIndex + 1} / ${this.roomScenes.length}`,
+      formatVec("player", this.player.position),
+      formatVec("camera", this.camera.position),
+      `yaw ${this.cameraYaw.toFixed(2)} pitch ${this.cameraPitch.toFixed(2)}`,
+      `zoom ${this.cameraDistance.toFixed(2)} min ${this.cameraDistanceLimits.min.toFixed(2)} max ${this.cameraDistanceLimits.max.toFixed(2)}`,
+      `playerScale ${playerScale}`
+    ].join("\n");
   }
 
   updateGreetingDialogPosition() {

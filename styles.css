@@ -1216,9 +1216,16 @@ a:focus-visible {
   bottom: 28px;
   right: 34px;
   font-family: "SF Mono", "Fira Code", "Consolas", monospace;
-  font-size: 12px;
+  max-width: min(360px, calc(100vw - 68px));
+  padding: 10px 12px;
+  border: 1px solid rgba(212, 225, 238, 0.16);
+  background: rgba(4, 12, 17, 0.54);
+  backdrop-filter: blur(10px);
+  font-size: 11px;
+  line-height: 1.55;
   letter-spacing: 0.06em;
-  color: rgba(201, 215, 230, 0.55);
+  white-space: pre;
+  color: rgba(201, 215, 230, 0.72);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
   pointer-events: none;
   user-select: none;
