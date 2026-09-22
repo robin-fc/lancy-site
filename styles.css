@@ -1277,9 +1277,12 @@ a:focus-visible {
 .gallery-focus.is-project { border-top-color: rgba(255, 255, 255, 0.72); }
 
 .gallery-controls { position: absolute; bottom: 28px; left: 32px; display: flex; align-items: flex-end; gap: 14px; }
-.key-grid { display: grid; width: 76px; grid-template-columns: repeat(3, 22px); gap: 4px; }
+.key-grid { display: grid; width: 76px; grid-template-columns: repeat(3, 22px); grid-template-rows: repeat(2, 22px); gap: 4px; }
 .key-grid kbd { display: grid; width: 22px; height: 22px; place-items: center; border: 1px solid rgba(225, 236, 247, 0.34); color: rgba(239, 247, 255, 0.78); background: rgba(5, 12, 17, 0.64); font: 10px/1 "Bahnschrift", sans-serif; }
-.key-grid kbd:first-child { grid-column: 2; }
+.key-grid kbd:nth-child(1) { grid-column: 2; grid-row: 1; }
+.key-grid kbd:nth-child(2) { grid-column: 1; grid-row: 2; }
+.key-grid kbd:nth-child(3) { grid-column: 2; grid-row: 2; }
+.key-grid kbd:nth-child(4) { grid-column: 3; grid-row: 2; }
 .gallery-controls p { display: flex; margin: 0 0 1px; flex-direction: column; gap: 4px; text-shadow: 0 2px 8px #000; }
 .gallery-controls b { font-size: 12px; font-weight: 400; letter-spacing: 0.15em; }
 .gallery-controls span { color: rgba(210, 223, 235, 0.58); font-size: 11px; }
